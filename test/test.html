@@ -6,12 +6,12 @@
 <script>
 function myclick(duration, span) {
 	var timeline = new Timeline(duration);
-	var spanCallback = function(durationFraction) {
-		span.innerHTML += (span.id + ": " + 100*durationFraction + "%<br>");
+	var spanCallback = function(timelinePosition) {
+		span.innerHTML = span.id + ": " + 100*timelinePosition + "%<br>";
 	}
 	timeline.addCallback(spanCallback);
-	var spanColorCallback = function(durationFraction) {
-		var redHex = parseInt(parseFloat(255*durationFraction)).toString(16);
+	var spanColorCallback = function(timelinePosition) {
+		var redHex = parseInt(parseFloat(255*timelinePosition)).toString(16);
 		span.style.color = "#" + redHex + "0000";
 	}
 	timeline.addCallback(spanColorCallback);
