@@ -5,7 +5,8 @@
 
 <script>
 function myclick(duration, span) {
-	var timeline = new Timeline(duration);
+	var timeline = new Timeline();
+	timeline.duration = duration;
 	var spanCallback = function(timelinePosition) {
 		span.innerHTML = span.id + ": " + 100*timelinePosition + "%<br>";
 	}

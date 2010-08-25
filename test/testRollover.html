@@ -10,8 +10,9 @@
       onmouseout="rolloverTimeline.playReverse();">Some text</div>
 
   <script>
-    var rolloverTimeline = new Timeline(2000);
-    rolloverTimeline.addPropertyToInterpolate(span.style, "color", "rgb(0,0,255)", "rgb(255,0,0)");
+    var rolloverTimeline = new Timeline(span.style);
+    rolloverTimeline.addPropertyToInterpolate("color", "rgb(0,0,255)", "rgb(255,0,0)");
+    rolloverTimeline.duration = 2000;
   </script>
 
 </body>

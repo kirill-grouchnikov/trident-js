@@ -23,8 +23,19 @@ ColorPropertyInterpolator.prototype.interpolate = function(from, to, timelinePos
   return "rgb(" + red + "," + green + "," + blue + ")";
 }
 
-function Timeline(duration) {
-	this.duration = duration;
+function Timeline() {
+ this.mainObject = null;
+ this.duration = 500;
+ this.durationFraction = 0;
+ this.callbacks = new Array;
+ this.properties = new Array;
+ this.state = TimelineState.IDLE;
+ this.id = timelineId++;
+}
+
+function Timeline(mainObject) {
+	this.mainObject = mainObject;
+	this.duration = 500;
 	this.durationFraction = 0;
 	this.callbacks = new Array;
 	this.properties = new Array;
@@ -36,11 +47,12 @@ Timeline.prototype.addCallback = function(callback) {
 	this.callbacks[this.callbacks.length] = callback;
 }
 
-Timeline.prototype.addPropertyToInterpolate = function(object, field, from, to) {
+Timeline.prototype.addPropertyToInterpolate = function(field, from, to) {
   var interpolator = new ColorPropertyInterpolator();
+  var timelineObj = this;
   var propCallback = function(timelinePosition) {
     var currValue = interpolator.interpolate(from, to, timelinePosition);
-    object[field] = currValue;
+    timelineObj.mainObject[field] = currValue;
   }
   this.callbacks[this.callbacks.length] = propCallback;
 }
