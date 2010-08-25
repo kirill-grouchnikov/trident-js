@@ -1,0 +1,39 @@
+<html>
+
+<head>
+<script type='text/javascript' src='../trident.js'></script>
+
+<script>
+function myclick(duration, span) {
+	var timeline = new Timeline(duration);
+	var spanCallback = function(durationFraction) {
+		span.innerHTML += (span.id + ": " + 100*durationFraction + "%<br>");
+	}
+	timeline.addCallback(spanCallback);
+	var spanColorCallback = function(durationFraction) {
+		var redHex = parseInt(parseFloat(255*durationFraction)).toString(16);
+		span.style.color = "#" + redHex + "0000";
+	}
+	timeline.addCallback(spanColorCallback);
+	timeline.play();
+}
+
+</script>
+</head>
+
+<body>
+	<input type="button" name="button1" value="3 sec" 
+		onClick="myclick(3000, mySpan1)"><br>
+	<input type="button" name="button1" value="5 sec" 
+		onClick="myclick(5000, mySpan2)"><br>
+	<table>
+		<td>
+			<div id="mySpan1"/>
+		</td>
+		<td>
+			<div id="mySpan2"/>
+		</td>
+	</table>
+</body>
+
+</html>
