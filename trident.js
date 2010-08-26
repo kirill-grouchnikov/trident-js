@@ -75,6 +75,18 @@ function Timeline(mainObject) {
 		addProperty(propInfo);
 	}
 	
+	this.addPropertiesToInterpolate = function(properties) {
+    for (var i=0; i<properties.length; i++) {
+      var propDefinition = properties[i];
+      var from = propDefinition["from"];
+      var to = propDefinition["to"];
+      var propName = propDefinition["property"];
+      var interpolator = propDefinition["interpolator"];
+      var propInfo = new PropertyInfo(getMainObject(), propName, from, to, interpolator);
+      addProperty(propInfo);
+    }
+	}
+	
 	this.play = function() {
 	  if (this.state == TimelineState.IDLE) {
 	    this.durationFraction = 0;

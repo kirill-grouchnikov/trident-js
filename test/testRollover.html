@@ -11,12 +11,14 @@
 
   <script>
     var rolloverTimeline = new Timeline(span.style);
-    // interpolate the foreground color between blue and red
-    rolloverTimeline.addPropertyToInterpolate("color", 
-      "rgb(0,0,255)", "rgb(255,0,0)", new RGBPropertyInterpolator());
-    // interpolate the background color between white and light yellow
-    rolloverTimeline.addPropertyToInterpolate("backgroundColor", 
-      "rgb(255,255,255)", "rgb(255,255,200)", new RGBPropertyInterpolator());
+    rolloverTimeline.addPropertiesToInterpolate([
+      // interpolate the foreground color between blue and red
+      {property: "color", from: "rgb(0,0,255)", to: "rgb(255,0,0)", 
+        interpolator: new RGBPropertyInterpolator()},
+      // interpolate the background color between white and light yellow
+      {property: "backgroundColor", from: "rgb(255,255,255)", to: "rgb(255,255,200)", 
+        interpolator: new RGBPropertyInterpolator()}
+    ]);
     // over the period of 2 seconds
     rolloverTimeline.duration = 2000;
   </script>
