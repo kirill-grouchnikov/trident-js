@@ -5,76 +5,104 @@ var timelineId = 0;
 var TimelineState = {"IDLE":0, "READY":1, "PLAYING_FORWARD":2, 
   "PLAYING_REVERSE":3, "SUSPENDED":4, "CANCELLED":5, "DONE":6};
   
-function ColorPropertyInterpolator() {
+function RGBPropertyInterpolator() {
+	var interpolateSingle = function(from, to, at) {
+	  var intFrom = parseInt(from);
+	  var intTo = parseInt(to);
+	  return parseInt(parseFloat(intFrom + at * (intTo - intFrom)));
+	}
+
+	this.interpolate = function(from, to, timelinePosition) {
+	  var fromParts = from.substring(4,from.length-1).split(',');
+	  var toParts = to.substring(4,to.length-1).split(',');
+	  var red = interpolateSingle(fromParts[0], toParts[0], timelinePosition);
+	  var green = interpolateSingle(fromParts[1], toParts[1], timelinePosition);
+	  var blue = interpolateSingle(fromParts[2], toParts[2], timelinePosition);
+	  return "rgb(" + red + "," + green + "," + blue + ")";
+	}
 }
 
-var interpolateSingle = function(from, to, at) {
-  var intFrom = parseInt(from);
-  var intTo = parseInt(to);
-  return parseInt(parseFloat(intFrom + at * (intTo - intFrom)));
-}
-
-ColorPropertyInterpolator.prototype.interpolate = function(from, to, timelinePosition) {
-  var fromParts = from.substring(4,from.length-1).split(',');
-  var toParts = to.substring(4,to.length-1).split(',');
-  var red = interpolateSingle(fromParts[0], toParts[0], timelinePosition);
-  var green = interpolateSingle(fromParts[1], toParts[1], timelinePosition);
-  var blue = interpolateSingle(fromParts[2], toParts[2], timelinePosition);
-  return "rgb(" + red + "," + green + "," + blue + ")";
-}
-
-function Timeline() {
- this.mainObject = null;
- this.duration = 500;
- this.durationFraction = 0;
- this.callbacks = new Array;
- this.properties = new Array;
- this.state = TimelineState.IDLE;
- this.id = timelineId++;
+function PropertyInfo(mainObject, field, from, to, interpolator) {
+	this.mainObject = mainObject;
+	this.field = field;
+	this.from = from;
+	this.to = to;
+	this.interpolator = interpolator;
+	
+	this.updateValue = function(timelinePosition) {
+		mainObject[field] = interpolator.interpolate(from, to, timelinePosition);
+	}
 }
 
 function Timeline(mainObject) {
-	this.mainObject = mainObject;
-	this.duration = 500;
 	this.durationFraction = 0;
-	this.callbacks = new Array;
-	this.properties = new Array;
+	this.duration = 500;
 	this.state = TimelineState.IDLE;
-	this.id = timelineId++;
-}
 
-Timeline.prototype.addCallback = function(callback) {
-	this.callbacks[this.callbacks.length] = callback;
-}
+	var mainObject = mainObject;
+	var callbacks = new Array;
+	var properties = new Array;
+	var id = timelineId++;
 
-Timeline.prototype.addPropertyToInterpolate = function(field, from, to) {
-  var interpolator = new ColorPropertyInterpolator();
-  var timelineObj = this;
-  var propCallback = function(timelinePosition) {
-    var currValue = interpolator.interpolate(from, to, timelinePosition);
-    timelineObj.mainObject[field] = currValue;
-  }
-  this.callbacks[this.callbacks.length] = propCallback;
-}
+	var getMainObject = function() {
+		return mainObject;
+	}
+	
+	var getId = function() {
+		return id;
+	}
+	
+	var getProperties = function() {
+		return properties;
+	}
+	
+	var addProperty = function(property) {
+		var currProperties = getProperties();
+		currProperties[currProperties.length] = property;
+	}
+	
+	var getCallbacks = function() {
+		return callbacks;
+	}
+	
+	this.addCallback = function(callback) {
+		var currCallbacks = getCallbacks();
+		currCallbacks[currCallbacks.length] = callback;
+	}
+	
+	this.addPropertyToInterpolate = function(field, from, to, interpolator) {
+		var propInfo = new PropertyInfo(getMainObject(), field, from, to, interpolator);
+		addProperty(propInfo);
+	}
+	
+	this.play = function() {
+	  if (this.state == TimelineState.IDLE) {
+	    this.durationFraction = 0;
+	  }
+	  this.state = TimelineState.PLAYING_FORWARD;
+	  timelineSet[getId()] = this;
+	}
 
-Timeline.prototype.play = function() {
-  if (this.state == TimelineState.IDLE) {
-    this.durationFraction = 0;
-  }
-  this.state = TimelineState.PLAYING_FORWARD;
-  timelineSet[this.id] = this;
-}
-
-Timeline.prototype.playReverse = function() {
-  if (this.state == TimelineState.IDLE) {
-    this.durationFraction = 1;
-  }
-  this.state = TimelineState.PLAYING_REVERSE;
-  timelineSet[this.id] = this;
-}
-
-function TimelineArray() {
-	this.timelines = new Array;
+	this.playReverse = function() {
+	  if (this.state == TimelineState.IDLE) {
+	    this.durationFraction = 1;
+	  }
+	  this.state = TimelineState.PLAYING_REVERSE;
+	  timelineSet[getId()] = this;
+	}
+	
+	this.__update = function() {
+		// TODO: convert duration fraction into timeline position
+		
+		var callbacks = getCallbacks();
+		for (var i=0; i<callbacks.length; i++) {
+			callbacks[i](this.durationFraction);
+		}
+		var properties = getProperties();
+		for (var i=0; i<properties.length; i++) {
+			properties[i].updateValue(this.durationFraction);
+		}
+	}
 }
 
 var timelineSet = {};
@@ -96,20 +124,16 @@ globalTimerCallback = function() {
 			if (timeline.durationFraction > 1) {
 				timeline.durationFraction = 1;
 				hasEnded = true;
-      }		  
-			for (var j=0; j<timeline.callbacks.length; j++) {
-				timeline.callbacks[j](timeline.durationFraction);
 			}
+			timeline.__update();
 		}
 		if (timelineState == TimelineState.PLAYING_REVERSE) {
 			timeline.durationFraction -= (delta / timeline.duration);
 			if (timeline.durationFraction < 0) {
 				timeline.durationFraction = 0;
 				hasEnded = true;
-      }		  
-			for (var j=0; j<timeline.callbacks.length; j++) {
-				timeline.callbacks[j](timeline.durationFraction);
 			}
+			timeline.__update();
 		}
 
 		if (hasEnded) {
@@ -119,6 +143,6 @@ globalTimerCallback = function() {
 			liveTimelines++;
 		}
 	}
-	//document.title = liveTimelines + " live timeline(s) out of " + totalTimelines;
+//	document.title = liveTimelines + " live timeline(s) out of " + totalTimelines;
 	lastTime = currTime;
 }
