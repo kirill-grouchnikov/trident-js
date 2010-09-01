@@ -22,6 +22,12 @@ function RGBPropertyInterpolator() {
 	}
 }
 
+function IntPropertyInterpolator() {
+	this.interpolate = function(from, to, timelinePosition) {
+	  return parseInt(parseFloat(from + (to - from) * timelinePosition));
+	}
+}
+
 function PropertyInfo(mainObject, field, from, to, interpolator) {
 	this.mainObject = mainObject;
 	this.field = field;

@@ -1,0 +1,64 @@
+<html>
+
+<head>
+<script type='text/javascript' src='../trident.js'></script>
+
+<script>
+
+function Ball() {
+  this.radius = 20;
+  this.ballY = this.radius;
+}
+
+var ball = new Ball();
+
+function draw() {
+  var canvas = document.getElementById("ballCanvas");
+  if (canvas.getContext) {
+    var ctx = canvas.getContext("2d");
+    
+    var w = canvas.width;
+    var h = canvas.height;
+    
+    ctx.clearRect(0,0,w,h); 
+    ctx.beginPath();
+    ctx.arc(w/2, ball.ballY, ball.radius, 0, 360, false);
+
+    var radgrad = ctx.createRadialGradient(
+      w/2-ball.radius/4, ball.ballY-ball.radius/5, ball.radius/4,
+      w/2, ball.ballY, ball.radius);
+    radgrad.addColorStop(0, '#00FF00');
+    radgrad.addColorStop(1, '#003300');
+    ctx.fillStyle = radgrad;
+    ctx.fill();
+  }
+}
+
+</script>
+
+</head>
+
+<body>
+  <canvas id="ballCanvas" width="300" height="300"></canvas><br>
+
+  <input type="button" name="buttonDown" value="down" onClick="timeline.play()">
+  <input type="button" name="buttonUp" value="up" onClick="timeline.playReverse()"><br>
+  
+  <script>
+    var timeline = new Timeline(ball);
+    timeline.addPropertiesToInterpolate([
+      // interpolate the ball Y position
+      { property: "ballY", 
+        from: ball.radius, 
+        to: document.getElementById("ballCanvas").height - ball.radius, 
+        interpolator: new IntPropertyInterpolator() }
+    ]);
+    var drawCallback = function(timelinePosition) {
+      draw();
+    }
+    timeline.addCallback(drawCallback);
+    timeline.duration = 3000;
+  </script>
+</body>
+
+</html>
