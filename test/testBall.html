@@ -60,7 +60,7 @@ function draw() {
     }
     var reportStateChange = function(oldState, newState, durationFraction, timelinePosition) {
       stateTracking.innerHTML += ("From " + oldState + " to " + newState + 
-        " at " + durationFraction + "<br>");
+        " at " + timelinePosition + "<br>");
     }
     timeline.addCallbacks([
       { onTimelinePulse: drawCallback, onTimelineStateChanged: reportStateChange }
