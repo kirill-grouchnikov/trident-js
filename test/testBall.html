@@ -38,11 +38,13 @@ function draw() {
 
 </head>
 
-<body>
-  <canvas id="ballCanvas" width="300" height="300"></canvas><br>
+<body onload="draw()">
+  <canvas id="ballCanvas" width="200" height="200"></canvas><br>
 
   <input type="button" name="buttonDown" value="down" onClick="timeline.play()">
   <input type="button" name="buttonUp" value="up" onClick="timeline.playReverse()"><br>
+  
+  <div id="stateTracking"/>
   
   <script>
     var timeline = new Timeline(ball);
@@ -56,8 +58,14 @@ function draw() {
     var drawCallback = function(timelinePosition) {
       draw();
     }
-    timeline.addCallback(drawCallback);
-    timeline.duration = 3000;
+    var reportStateChange = function(oldState, newState, durationFraction, timelinePosition) {
+      stateTracking.innerHTML += ("From " + oldState + " to " + newState + 
+        " at " + durationFraction + "<br>");
+    }
+    timeline.addCallbacks([
+      { onTimelinePulse: drawCallback, onTimelineStateChanged: reportStateChange }
+    ]);
+    timeline.duration = 2000;
   </script>
 </body>
 
