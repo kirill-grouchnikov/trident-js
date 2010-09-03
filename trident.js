@@ -75,6 +75,7 @@ function Timeline(mainObject) {
   this.duration = 500;
   this.timeUntilPlay = 0;
   this.initialDelay = 0;
+  this.isLooping = false;
 
   var mainObject = mainObject;
   var callbacks = new Array;
@@ -152,10 +153,8 @@ function Timeline(mainObject) {
     this.__pushState(state);
   }
 
-  this.play = function() {
+  this.__play = function(reset, msToSkip) {
     var existing = timelineSet[getId()];
-    var msToSkip = 0;
-    var reset = false;
     if (existing == undefined) {
       var oldState = this.getState();
       this.timeUntilPlay = this.initialDelay - msToSkip;
@@ -198,11 +197,19 @@ function Timeline(mainObject) {
       }
     }
   }
+  
+  this.play = function() {
+    this.isLooping = false;
+    this.__play(false, 0);
+  }
 
-  this.playReverse = function() {
+  this.replay = function() {
+    this.isLooping = false;
+    this.__play(true, 0);
+  }
+
+  this.__playReverse = function(reset, msToSkip) {
     var existing = timelineSet[getId()];
-    var msToSkip = 0;
-    var reset = false;
     if (existing == undefined) {
       var oldState = this.getState();
       this.timeUntilPlay = this.initialDelay - msToSkip;
@@ -245,7 +252,61 @@ function Timeline(mainObject) {
       }
     }
   }
-  
+
+  this.playReverse = function() {
+    this.isLooping = false;
+    this.__playReverse(false, 0);
+  }
+
+  this.replayReverse = function() {
+    this.isLooping = false;
+    this.__playReverse(true, 0);
+  }
+
+  this.cancel = function() {
+    var existing = timelineSet[getId()];
+    if (existing == undefined) {
+      return;
+    }
+    delete timelineSet[getId()];
+    var oldState = timeline.getState();
+    while (this.getState() != TimelineState.IDLE) {
+      this.__popState();
+    }
+    this.__pushState(TimelineState.CANCELLED);
+    this.__callbackCallTimelineStateChanged(oldState);
+    this.__popState();
+    this.__callbackCallTimelineStateChanged(TimelineState.CANCELLED);
+  }
+
+  this.suspend = function() {
+    var existing = timelineSet[getId()];
+    if (existing == undefined) {
+      return;
+    }
+    var oldState = this.getState();
+    if ((oldState != TimelineState.PLAYING_FORWARD)
+        && (oldState != TimelineState.PLAYING_REVERSE)
+        && (oldState != TimelineState.READY)) {
+      return;
+    }
+    this.__pushState(TimelineState.SUSPENDED);
+    this.__callbackCallTimelineStateChanged(oldState);
+  }
+
+  this.resume = function() {
+    var existing = timelineSet[getId()];
+    if (existing == undefined) {
+      return;
+    }
+    var oldState = this.getState();
+    if (oldState != TimelineState.SUSPENDED) {
+    return;
+    }
+    this.__popState();
+    this.__callbackCallTimelineStateChanged(oldState);
+  }
+
   this.__callbackCallTimelinePulse = function() {
     // TODO: convert duration fraction into timeline position
 

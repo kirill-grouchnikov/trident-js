@@ -40,9 +40,20 @@ function draw() {
 
 <body onload="draw()">
   <canvas id="ballCanvas" width="200" height="200"></canvas><br>
+  
+  Initial delay:
+  <input name="buttonDown" value="0"><br>
 
   <input type="button" name="buttonDown" value="down" onClick="timeline.play()">
-  <input type="button" name="buttonUp" value="up" onClick="timeline.playReverse()"><br>
+  <input type="button" name="buttonUp" value="up" onClick="timeline.playReverse()">
+  -
+  <input type="button" name="buttonReDown" value="down from top" onClick="timeline.replay()">
+  <input type="button" name="buttonReUp" value="up from bottom" onClick="timeline.replayReverse()">
+  <br>
+
+  <input type="button" name="buttonCancel" value="cancel" onClick="timeline.cancel()">
+  <input type="button" name="buttonSuspend" value="suspend" onClick="timeline.suspend()">
+  <input type="button" name="buttonResume" value="resume" onClick="timeline.resume()">
   
   <div id="stateTracking"/>
   
@@ -61,6 +72,7 @@ function draw() {
     var reportStateChange = function(oldState, newState, durationFraction, timelinePosition) {
       stateTracking.innerHTML += ("From " + oldState + " to " + newState + 
         " at " + timelinePosition + "<br>");
+      draw();
     }
     timeline.addCallbacks([
       { onTimelinePulse: drawCallback, onTimelineStateChanged: reportStateChange }
