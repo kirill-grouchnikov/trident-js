@@ -62,6 +62,7 @@ function Stack() {
     var toReturn = this.peek();
     liveCount--;
     delete elements[liveCount];
+    return toReturn;
   }
 
   this.push = function(element) {
@@ -76,6 +77,7 @@ function Timeline(mainObject) {
   this.timeUntilPlay = 0;
   this.initialDelay = 0;
   this.isLooping = false;
+  this.timelinePosition = 0;
 
   var mainObject = mainObject;
   var callbacks = new Array;
@@ -277,6 +279,43 @@ function Timeline(mainObject) {
     this.__callbackCallTimelineStateChanged(oldState);
     this.__popState();
     this.__callbackCallTimelineStateChanged(TimelineState.CANCELLED);
+  }
+
+  this.end = function() {
+    var existing = timelineSet[getId()];
+    if (existing == undefined) {
+      return;
+    }
+    delete timelineSet[getId()];
+    var oldState = timeline.getState();
+    var endFraction = timeline.durationFraction;
+    while (this.getState() != TimelineState.IDLE) {
+      var state = this.__popState();
+      if (state == TimelineState.PLAYING_FORWARD) {
+        endFraction = 1;
+      }
+      if (state == TimelineState.PLAYING_REVERSE) {
+        endFraction = 0;
+      }
+    }
+    this.durationFraction = endFraction;
+    this.timelinePosition = endFraction;
+    this.__callbackCallTimelinePulse();
+    this.__pushState(TimelineState.DONE);
+    this.__callbackCallTimelineStateChanged(oldState);
+    this.__popState();
+    this.__callbackCallTimelineStateChanged(TimelineState.DONE);
+  }
+
+  this.abort = function() {
+    var existing = timelineSet[getId()];
+    if (existing == undefined) {
+      return;
+    }
+    delete timelineSet[getId()];
+    while (this.getState() != TimelineState.IDLE) {
+      this.__popState();
+    }
   }
 
   this.suspend = function() {
