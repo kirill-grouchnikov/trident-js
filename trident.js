@@ -5,7 +5,9 @@ var timelineId = 0;
 var TimelineState = {"IDLE":"IDLE", "READY":"READY", 
   "PLAYING_FORWARD":"PLAYING_FORWARD", "PLAYING_REVERSE":"PLAYING_REVERSE", 
   "SUSPENDED":"SUSPENDED", "CANCELLED":"CANCELLED", "DONE":"DONE"};
-  
+
+var RepeatBehavior = {"LOOP":"LOOP", "REVERSE":"REVERSE"};
+
 function RGBPropertyInterpolator() {
   var interpolateSingle = function(from, to, at) {
     var intFrom = parseInt(from);
@@ -78,6 +80,11 @@ function Timeline(mainObject) {
   this.initialDelay = 0;
   this.isLooping = false;
   this.timelinePosition = 0;
+  this.toCancelAtCycleBreak = false;
+
+  this.cycleDelay = 0;
+  this.repeatCount = -1;
+  this.repeatBehavior;
 
   var mainObject = mainObject;
   var callbacks = new Array;
@@ -265,13 +272,62 @@ function Timeline(mainObject) {
     this.__playReverse(true, 0);
   }
 
+  this.__playLoop = function(msToSkip) {
+    var existing = timelineSet[getId()];
+    if (existing == undefined) {
+      var oldState = this.getState();
+      this.timeUntilPlay = this.initialDelay - msToSkip;
+      if (this.timeUntilPlay < 0) {
+        this.durationFraction = -this.timeUntilPlay / this.duration;
+        // TODO: timeline position
+        // timeline.timelinePosition = timeline.ease
+        //.map(timeline.durationFraction);
+        this.timeUntilPlay = 0;
+      } else {
+        this.durationFraction = 0;
+        this.timelinePosition = 0;
+      }
+      this.__pushState(TimelineState.PLAYING_FORWARD);
+      this.__pushState(TimelineState.READY);
+      this.toCancelAtCycleBreak = false;
+
+      timelineSet[getId()] = this;
+      this.__callbackCallTimelineStateChanged(oldState);
+    } else {
+      this.toCancelAtCycleBreak = false;
+    }
+  }
+
+  this.playLoopSkipping = function(loopCount, repeatBehavior, msToSkip) {
+    this.isLooping = true;
+    this.repeatCount = loopCount;
+    this.repeatBehavior = repeatBehavior;
+    this.__playLoop(msToSkip);
+  }
+  
+  this.playInfiniteLoop = function(repeatBehavior) {
+    this.playLoop(-1, repeatBehavior);
+  }
+
+  this.playInfiniteLoopSkipping = function(repeatBehavior, msToSkip) {
+    this.playLoopSkipping(-1, repeatBehavior, msToSkip);
+  }
+
+  this.playLoop = function(loopCount, repeatBehavior) {
+    this.playLoopSkipping(loopCount, repeatBehavior, 0);
+  }
+
+  this.cancelAtCycleBreak = function() {
+    this.toCancelAtCycleBreak = true;
+  }
+
   this.cancel = function() {
     var existing = timelineSet[getId()];
     if (existing == undefined) {
       return;
     }
     delete timelineSet[getId()];
-    var oldState = timeline.getState();
+    var oldState = this.getState();
     while (this.getState() != TimelineState.IDLE) {
       this.__popState();
     }
@@ -373,12 +429,16 @@ function Timeline(mainObject) {
           this.durationFraction, this.durationFraction);
       }
     }
+    var properties = getProperties();
+    for (var i=0; i<properties.length; i++) {
+      properties[i].updateValue(this.durationFraction);
+    }
   }
 }
 
 var timelineSet = {};
 
-setInterval("globalTimerCallback()", 100);
+setInterval("globalTimerCallback()", 40);
 
 globalTimerCallback = function() {
   var currTime = new Date().getTime();
@@ -416,7 +476,43 @@ globalTimerCallback = function() {
       }
       if (timeline.durationFraction > 1) {
         timeline.durationFraction = 1;
-        hasEnded = true;
+        timeline.timelinePosition = 1;
+        if (timeline.isLooping) {
+          var stopLoopingAnimation = timeline.toCancelAtCycleBreak;
+          var loopsToLive = timeline.repeatCount;
+          if (loopsToLive > 0) {
+            loopsToLive--;
+            stopLoopingAnimation = stopLoopingAnimation || (loopsToLive == 0);
+            timeline.repeatCount = loopsToLive;
+          }
+          if (stopLoopingAnimation) {
+            // end looping animation
+            hasEnded = true;
+          } else {
+            if (timeline.repeatBehavior == RepeatBehavior.REVERSE) {
+              timeline.__replaceState(TimelineState.PLAYING_REVERSE);
+              if (timeline.cycleDelay > 0) {
+                timeline.__pushState(TimelineState.READY);
+                timeline.timeUntilPlay = timeline.cycleDelay;
+              }
+              timeline.__callbackCallTimelineStateChanged(TimelineState.PLAYING_FORWARD);
+            } else {
+              timeline.durationFraction = 0;
+              timeline.timelinePosition = 0;
+              if (timeline.cycleDelay > 0) {
+                timeline.__pushState(TimelineState.READY);
+                timeline.timeUntilPlay = timeline.cycleDelay;
+                timeline.__callbackCallTimelineStateChanged(TimelineState.PLAYING_FORWARD);
+              } else {
+                // it's still playing forward, but lets
+                // the app code know that the new loop has begun
+                timeline.__callbackCallTimelineStateChanged(TimelineState.PLAYING_FORWARD);
+              }
+            }
+          }
+        } else {
+          hasEnded = true;
+        }
       }
       timeline.__callbackCallTimelinePulse();
     }
@@ -427,7 +523,29 @@ globalTimerCallback = function() {
       }
       if (timeline.durationFraction < 0) {
         timeline.durationFraction = 0;
-        hasEnded = true;
+        timeline.timelinePosition = 0;
+        if (timeline.isLooping) {
+          var stopLoopingAnimation = timeline.toCancelAtCycleBreak;
+          var loopsToLive = timeline.repeatCount;
+          if (loopsToLive > 0) {
+            loopsToLive--;
+            stopLoopingAnimation = stopLoopingAnimation || (loopsToLive == 0);
+            timeline.repeatCount = loopsToLive;
+          }
+          if (stopLoopingAnimation) {
+            // end looping animation
+            hasEnded = true;
+          } else {
+            timeline.__replaceState(TimelineState.PLAYING_FORWARD);
+            if (timeline.cycleDelay > 0) {
+              timeline.__pushState(TimelineState.READY);
+              timeline.timeUntilPlay = timeline.cycleDelay;
+            }
+            timeline.__callbackCallTimelineStateChanged(TimelineState.PLAYING_REVERSE);
+          }
+        } else {
+          hasEnded = true;
+        }
       }
       timeline.__callbackCallTimelinePulse();
     }

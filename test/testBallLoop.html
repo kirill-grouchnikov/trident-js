@@ -1,0 +1,106 @@
+<html>
+
+<head>
+<script type='text/javascript' src='../trident.js'></script>
+
+<script>
+
+function Ball() {
+  this.radius = 20;
+  this.ballY = this.radius;
+}
+
+var ball = new Ball();
+
+function draw() {
+  var canvas = document.getElementById("ballCanvas");
+  if (canvas.getContext) {
+    var ctx = canvas.getContext("2d");
+    
+    var w = canvas.width;
+    var h = canvas.height;
+    
+    ctx.clearRect(0,0,w,h); 
+    ctx.beginPath();
+    ctx.arc(w/2, ball.ballY, ball.radius, 0, 360, false);
+
+    var radgrad = ctx.createRadialGradient(
+      w/2-ball.radius/4, ball.ballY-ball.radius/5, ball.radius/4,
+      w/2, ball.ballY, ball.radius);
+    radgrad.addColorStop(0, '#00FF00');
+    radgrad.addColorStop(1, '#003300');
+    ctx.fillStyle = radgrad;
+    ctx.fill();
+  }
+}
+
+var timelineBallFalling;
+
+function run() {
+  if (timelineBallFalling != undefined) {
+    timelineBallFalling.cancel();
+  }
+  timelineBallFalling = new Timeline(ball);
+  timelineBallFalling.addPropertiesToInterpolate([
+    // interpolate the ball Y position
+    { property: "ballY", 
+      from: ball.radius, 
+      to: document.getElementById("ballCanvas").height - ball.radius, 
+      interpolator: new IntPropertyInterpolator() }
+  ]);
+  var drawCallback = function(timelinePosition) {
+    draw();
+  }
+  var reportStateChange = function(oldState, newState, durationFraction, timelinePosition) {
+    stateTracking.innerHTML += ("From " + oldState + " to " + newState + 
+      " at " + timelinePosition + "<br>");
+    draw();
+  }
+  timelineBallFalling.addCallbacks([
+    { onTimelinePulse: drawCallback, onTimelineStateChanged: reportStateChange }
+  ]);
+  timelineBallFalling.duration = 2000;
+  timelineBallFalling.initialDelay = document.getElementById("initialDelay").value;
+  timelineBallFalling.cycleDelay = document.getElementById("cycleDelay").value;
+  timelineBallFalling.playInfiniteLoop(RepeatBehavior.REVERSE);
+}
+
+function cancel() {
+  if (timelineBallFalling != undefined) {
+    timelineBallFalling.cancelAtCycleBreak();
+  }
+}
+
+function suspend() {
+  if (timelineBallFalling != undefined) {
+    timelineBallFalling.suspend();
+  }
+}
+
+function resume() {
+  if (timelineBallFalling != undefined) {
+    timelineBallFalling.resume();
+  }
+}
+
+</script>
+
+</head>
+
+<body onload="draw()">
+  <canvas id="ballCanvas" width="200" height="200"></canvas><br>
+  
+  Initial delay:
+  <input id="initialDelay" value="0"><br>
+  Cycle delay:
+  <input id="cycleDelay" value="0"><br>
+
+  <input type="button" name="buttonRun" value="run" onClick="run()">
+  <input type="button" name="buttonCancel" value="cancel" onClick="cancel()">
+  <input type="button" name="buttonSuspend" value="suspend" onClick="suspend()">
+  <input type="button" name="buttonResume" value="resume" onClick="resume()">
+  
+  <div id="stateTracking"/>
+</body>
+
+</html>

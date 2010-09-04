@@ -41,9 +41,6 @@ function draw() {
 <body onload="draw()">
   <canvas id="ballCanvas" width="200" height="200"></canvas><br>
   
-  Initial delay:
-  <input name="buttonDown" value="0"><br>
-
   <input type="button" name="buttonDown" value="down" onClick="timeline.play()">
   <input type="button" name="buttonUp" value="up" onClick="timeline.playReverse()">
   -
@@ -81,6 +78,7 @@ function draw() {
       { onTimelinePulse: drawCallback, onTimelineStateChanged: reportStateChange }
     ]);
     timeline.duration = 2000;
+    timeline.initialDelay = 1000;
   </script>
 </body>
 
