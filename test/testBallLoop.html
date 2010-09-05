@@ -60,6 +60,7 @@ function run() {
     { onTimelinePulse: drawCallback, onTimelineStateChanged: reportStateChange }
   ]);
   timelineBallFalling.duration = 2000;
+  timelineBallFalling.ease = new SineEase();
   timelineBallFalling.initialDelay = document.getElementById("initialDelay").value;
   timelineBallFalling.cycleDelay = document.getElementById("cycleDelay").value;
   timelineBallFalling.playInfiniteLoop(RepeatBehavior.REVERSE);

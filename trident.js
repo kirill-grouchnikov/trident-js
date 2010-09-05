@@ -8,6 +8,9 @@ var TimelineState = {"IDLE":"IDLE", "READY":"READY",
 
 var RepeatBehavior = {"LOOP":"LOOP", "REVERSE":"REVERSE"};
 
+/**
+ * Interpolators
+ */
 function RGBPropertyInterpolator() {
   var interpolateSingle = function(from, to, at) {
     var intFrom = parseInt(from);
@@ -28,6 +31,27 @@ function RGBPropertyInterpolator() {
 function IntPropertyInterpolator() {
   this.interpolate = function(from, to, timelinePosition) {
     return parseInt(parseFloat(from + (to - from) * timelinePosition));
+  }
+}
+
+function FloatPropertyInterpolator() {
+  this.interpolate = function(from, to, timelinePosition) {
+    return parseFloat(from + (to - from) * timelinePosition);
+  }
+}
+
+/**
+ * Ease
+ */
+function LinearEase() {
+  this.map = function(durationFraction) {
+    return durationFraction;
+  }
+}
+
+function SineEase() {
+  this.map = function(durationFraction) {
+    return Math.sin(durationFraction * Math.PI / 2);
   }
 }
 
@@ -81,6 +105,7 @@ function Timeline(mainObject) {
   this.isLooping = false;
   this.timelinePosition = 0;
   this.toCancelAtCycleBreak = false;
+  this.ease = new LinearEase();
 
   this.cycleDelay = 0;
   this.repeatCount = -1;
@@ -169,14 +194,11 @@ function Timeline(mainObject) {
       this.timeUntilPlay = this.initialDelay - msToSkip;
       if (this.timeUntilPlay < 0) {
         this.durationFraction = -this.timeUntilPlay / this.duration;
-        // TODO: map position
-        // timeline.timelinePosition = timeline.ease
-        //     .map(timeline.durationFraction);
+        this.timelinePosition = this.ease.map(this.durationFraction);
         this.timeUntilPlay = 0;
       } else {
         this.durationFraction = 0;
-        // TODO: position
-        //timeline.timelinePosition = 0.0f;
+        this.timelinePosition = 0;
       }
       this.__pushState(TimelineState.PLAYING_FORWARD);
       this.__pushState(TimelineState.READY);
@@ -200,8 +222,7 @@ function Timeline(mainObject) {
       }
       if (reset) {
         this.durationFraction = 0;
-        // TODO: position
-        //existing.timelinePosition = 0.0f;
+        this.timelinePosition = 0;
         this.__callbackCallTimelinePulse();
       }
     }
@@ -224,14 +245,11 @@ function Timeline(mainObject) {
       this.timeUntilPlay = this.initialDelay - msToSkip;
       if (this.timeUntilPlay < 0) {
         this.durationFraction = 1 - this.timeUntilPlay / this.duration;
-        // TODO: map position
-        // timeline.timelinePosition = timeline.ease
-        //     .map(timeline.durationFraction);
+        this.timelinePosition = this.ease.map(this.durationFraction);
         this.timeUntilPlay = 0;
       } else {
         this.durationFraction = 1;
-        // TODO: position
-        //timeline.timelinePosition = 1;
+        this.timelinePosition = 1;
       }
       this.__pushState(TimelineState.PLAYING_REVERSE);
       this.__pushState(TimelineState.READY);
@@ -255,8 +273,7 @@ function Timeline(mainObject) {
       }
       if (reset) {
         this.durationFraction = 1;
-        // TODO: position
-        //existing.timelinePosition = 1;
+        this.timelinePosition = 1;
         this.__callbackCallTimelinePulse();
       }
     }
@@ -279,9 +296,7 @@ function Timeline(mainObject) {
       this.timeUntilPlay = this.initialDelay - msToSkip;
       if (this.timeUntilPlay < 0) {
         this.durationFraction = -this.timeUntilPlay / this.duration;
-        // TODO: timeline position
-        // timeline.timelinePosition = timeline.ease
-        //.map(timeline.durationFraction);
+        this.timelinePosition = this.ease.map(this.durationFraction);
         this.timeUntilPlay = 0;
       } else {
         this.durationFraction = 0;
@@ -403,35 +418,35 @@ function Timeline(mainObject) {
   }
 
   this.__callbackCallTimelinePulse = function() {
-    // TODO: convert duration fraction into timeline position
+    this.timelinePosition = this.ease.map(this.durationFraction);
 
     var callbacks = getCallbacks();
     for (var i=0; i<callbacks.length; i++) {
       var callbackOnPulse = callbacks[i].onTimelinePulse;
       if (callbackOnPulse != undefined) {
-        callbackOnPulse(this.durationFraction);
+        callbackOnPulse(this.timelinePosition);
       }
     }
     var properties = getProperties();
     for (var i=0; i<properties.length; i++) {
-      properties[i].updateValue(this.durationFraction);
+      properties[i].updateValue(this.timelinePosition);
     }
   }
   
   this.__callbackCallTimelineStateChanged = function(oldState) {
     var currState = this.getState();
-    // TODO: timeline position
+    this.timelinePosition = this.ease.map(this.durationFraction);
     var callbacks = getCallbacks();
     for (var i=0; i<callbacks.length; i++) {
       var callbackOnStateChanged = callbacks[i].onTimelineStateChanged;
       if (callbackOnStateChanged != undefined) {
         callbackOnStateChanged(oldState, this.getState(), 
-          this.durationFraction, this.durationFraction);
+          this.durationFraction, this.timelinePosition);
       }
     }
     var properties = getProperties();
     for (var i=0; i<properties.length; i++) {
-      properties[i].updateValue(this.durationFraction);
+      properties[i].updateValue(this.timelinePosition);
     }
   }
 }
