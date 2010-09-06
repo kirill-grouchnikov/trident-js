@@ -36,7 +36,9 @@ function IntPropertyInterpolator() {
 
 function FloatPropertyInterpolator() {
   this.interpolate = function(from, to, timelinePosition) {
-    return parseFloat(from + (to - from) * timelinePosition);
+    var fFrom = parseFloat(from);
+    var fTo = parseFloat(to);
+    return parseFloat(fFrom + (fTo - fFrom) * timelinePosition);
   }
 }
 
@@ -55,6 +57,170 @@ function SineEase() {
   }
 }
 
+/**
+ * Key frames
+ */
+function KeyEases(numIntervals, eases) {
+  this.eases = new Array();
+
+  if (eases == undefined || eases[0] == undefined) {
+    for (var i = 0; i < numIntervals; ++i) {
+      this.eases[this.eases.length] = new LinearEase();
+    }
+  } else if (eases.length < numIntervals) {
+    for (var i = 0; i < numIntervals; ++i) {
+      this.eases[this.eases.length] = eases[0];
+    }
+  } else {
+    for (var i = 0; i < numIntervals; ++i) {
+      this.eases[this.eases.length] = eases[i];
+    }
+  }
+
+  this.interpolate = function(interval, fraction) {
+      return this.eases[interval].map(fraction);
+  }
+}
+
+function KeyTimes(times) {
+  this.times = new Array();
+
+  if (times[0] != 0) {
+    throw "First time value must be zero";
+  }
+  if (times[times.length - 1] != 1) {
+    throw "Last time value must be one";
+  }
+  var prevTime = 0;
+  for (var i=0; i<times.length; i++) {
+    var time = times[i];
+    if (time < prevTime) {
+      throw "Time values must be in increasing order";
+    }
+    this.times[this.times.length] = time;
+    prevTime = time;
+  }
+
+  this.getInterval = function(fraction) {
+    var prevIndex = 0;
+    for (var i = 1; i < this.times.length; ++i) {
+      var time = this.times[i];
+      if (time >= fraction) { 
+        // inclusive of start time at next interval.  So fraction==1
+        // will return the final interval (times.size() - 1)
+        return prevIndex;
+      }
+      prevIndex = i;
+    }
+    return prevIndex;
+  }
+
+  this.getTime = function(index) {
+    return this.times[index];
+  }
+}
+
+function KeyValues(propertyInterpolator, params) {
+  this.values = new Array();
+  this.propertyInterpolator = propertyInterpolator;
+  this.startValue;
+
+  if (params == undefined) {
+    throw "params array cannot be null";
+  } else if (params.length == 0) {
+    throw "params array must have at least one element";
+  }
+  if (params.length == 1) {
+    // this is a "to" animation; set first element to null
+    this.values[this.values.length] = undefined;
+  }
+  for (var i=0; i<params.length; i++) {
+    this.values[this.values.length] = params[i];
+  }
+
+  this.getSize = function() {
+    return values.length;
+  }
+
+  this.setStartValue = function(startValue) {
+    if (this.isToAnimation()) {
+      this.startValue = startValue;
+    }
+  }
+
+  this.isToAnimation = function() {
+    return (values.get(0) == undefined);
+  }
+
+  this.getValue = function(i0, i1, fraction) {
+    var value;
+    var lowerValue = this.values[i0];
+    if (lowerValue == undefined) {
+      // "to" animation
+      lowerValue = startValue;
+    }
+    if (i0 == i1) {
+      // trivial case
+      value = lowerValue;
+    } else {
+      var v0 = lowerValue;
+      var v1 = this.values[i1];
+      value = this.propertyInterpolator.interpolate(v0, v1, fraction);
+    }
+    return value;
+  }
+}
+
+function KeyFrames(timeValueMap, propertyInterpolator, ease) {
+  this.keyValues;
+  this.keyTimes;
+  this.eases;
+
+  this.__init = function(timeValueMap, propertyInterpolator, eases) {
+    var __keyValues = new Array();
+    var __keyTimes = new Array();
+    for (var keyTime in timeValueMap) {
+      __keyTimes[__keyTimes.length] = keyTime;
+      __keyValues[__keyValues.length] = timeValueMap[keyTime];
+    }
+    var numFrames = __keyValues.length;
+    this.keyTimes = new KeyTimes(__keyTimes);
+    this.keyValues = new KeyValues(propertyInterpolator, __keyValues);
+    this.eases = new KeyEases(numFrames - 1, eases);
+  }
+
+  this.getKeyValues = function() {
+    return this.keyValues;
+  }
+
+  this.getKeyTimes = function() {
+    return this.keyTimes;
+  }
+
+  this.getInterval = function(fraction) {
+    return this.keyTimes.getInterval(fraction);
+  }
+
+  this.getValue = function(fraction) {
+    // First, figure out the real fraction to use, given the
+    // interpolation type and keyTimes
+    var interval = this.getInterval(fraction);
+    var t0 = this.keyTimes.getTime(interval);
+    var t1 = this.keyTimes.getTime(interval + 1);
+    var t = (fraction - t0) / (t1 - t0);
+    var interpolatedT = this.eases.interpolate(interval, t);
+    // clamp to avoid problems with buggy interpolators
+    if (interpolatedT < 0) {
+      interpolatedT = 0;
+    } else if (interpolatedT > 1) {
+      interpolatedT = 1;
+    }
+    return this.keyValues.getValue(interval, (interval + 1), interpolatedT);
+  }
+  
+  this.__init(timeValueMap, propertyInterpolator, [ease]);
+}
+
 function PropertyInfo(mainObject, field, from, to, interpolator) {
   this.mainObject = mainObject;
   this.field = field;
@@ -63,7 +229,18 @@ function PropertyInfo(mainObject, field, from, to, interpolator) {
   this.interpolator = interpolator;
 
   this.updateValue = function(timelinePosition) {
-    mainObject[field] = interpolator.interpolate(from, to, timelinePosition);
+    this.mainObject[field] = interpolator.interpolate(from, to, timelinePosition);
+  }
+}
+
+function KeyFramesPropertyInfo(mainObject, field, timeValueMap, propertyInterpolator) {
+  this.mainObject = mainObject;
+  this.field = field;
+  this.keyFrames = new KeyFrames(timeValueMap, propertyInterpolator);
+
+  this.updateValue = function(timelinePosition) {
+    var value = this.keyFrames.getValue(timelinePosition);
+    this.mainObject[field] = value;
   }
 }
 
@@ -153,12 +330,19 @@ function Timeline(mainObject) {
   this.addPropertiesToInterpolate = function(properties) {
     for (var i=0; i<properties.length; i++) {
       var propDefinition = properties[i];
-      var from = propDefinition["from"];
-      var to = propDefinition["to"];
       var propName = propDefinition["property"];
       var interpolator = propDefinition["interpolator"];
-      var propInfo = new PropertyInfo(getMainObject(), propName, from, to, interpolator);
-      addProperty(propInfo);
+
+      var keyFrames = propDefinition["goingThrough"];
+      if (keyFrames != undefined) {
+        var propInfo = new KeyFramesPropertyInfo(getMainObject(), propName, keyFrames, interpolator);
+        addProperty(propInfo);
+      } else {
+        var from = propDefinition["from"];
+        var to = propDefinition["to"];
+        var propInfo = new PropertyInfo(getMainObject(), propName, from, to, interpolator);
+        addProperty(propInfo);
+      }
     }
   }
 
@@ -576,6 +760,6 @@ globalTimerCallback = function() {
       liveTimelines++;
     }
   }
-//	document.title = liveTimelines + " live timeline(s) out of " + totalTimelines;
+//  document.title = liveTimelines + " live timeline(s) out of " + totalTimelines;
   lastTime = currTime;
 }

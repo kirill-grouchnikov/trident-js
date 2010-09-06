@@ -9,8 +9,7 @@ function TimelineVisualizerDot(x, y) {
   this.draw = function(ctx, w, h) {
     ctx.beginPath();
     ctx.arc(this.x * w, this.y * h, 3, 0, 360, false);
-    var a = (this.alpha < 0.5) ? 2 * this.alpha : 2 * (1 - this.alpha);
-    ctx.fillStyle = "rgba(0, 200, 40, " + a + ")";  
+    ctx.fillStyle = "rgba(0, 200, 40, " + this.alpha + ")";  
     ctx.fill();
   }
 }
@@ -31,8 +30,8 @@ function TimelineVisualizer() {
 
     var dotTimeline = new Timeline(dot);
     dotTimeline.addPropertiesToInterpolate([
-      // interpolate the ball Y position
-      { property: "alpha", from: 0, to: 1, 
+      { property: "alpha",
+        goingThrough: { 0: 0, 0.8: 1, 1: 0},
         interpolator: new FloatPropertyInterpolator() }
     ]);
     dotTimeline.addCallbacks([

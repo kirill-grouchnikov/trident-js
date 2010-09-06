@@ -1,0 +1,37 @@
+<html>
+
+<head>
+<script type='text/javascript' src='../trident.js'></script>
+
+<script>
+function myclick() {
+  function MyObject() {
+    this.fvalue = 0;
+  }
+  
+  var myobj = new MyObject();
+  var timeline = new Timeline(myobj);
+  timeline.addPropertiesToInterpolate([
+    { property: "fvalue",
+      goingThrough: { 0: 0, 0.4: 1, 1: 0.2},
+      interpolator: new FloatPropertyInterpolator() }
+  ]);
+  timeline.addCallbacks([
+    { onTimelinePulse: function(durationFraction, timelinePosition) {
+        mySpan1.innerHTML += (timelinePosition + ":" + myobj.fvalue + "<br>");
+      } 
+    }
+  ]);
+  timeline.duration = 500;
+  timeline.play();
+}
+
+</script>
+</head>
+
+<body>
+  <input type="button" name="button1" value="key frames" onClick="myclick()"><br>
+  <div id="mySpan1"/>
+</body>
+
+</html>

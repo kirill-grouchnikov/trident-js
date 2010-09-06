@@ -1,0 +1,28 @@
+<html>
+
+<head>
+<script type='text/javascript' src='../trident.js'></script>
+
+<script>
+function myclick() {
+  var frames = new KeyFrames(
+    { 0: 0, 0.4: 1, 1: 0.2},
+    new LinearEase(),
+    new FloatPropertyInterpolator()
+  );
+  mySpan1.innerHTML += ("0 :" + frames.getValue(0) + "<br>");
+  mySpan1.innerHTML += ("0.25 :" + frames.getValue(0.25) + "<br>");
+  mySpan1.innerHTML += ("0.5 :" + frames.getValue(0.5) + "<br>");
+  mySpan1.innerHTML += ("0.75 :" + frames.getValue(0.75) + "<br>");
+  mySpan1.innerHTML += ("1 :" + frames.getValue(1) + "<br>");
+}
+
+</script>
+</head>
+
+<body>
+  <input type="button" name="button1" value="key frames" onClick="myclick()"><br>
+  <div id="mySpan1"/>
+</body>
+
+</html>
