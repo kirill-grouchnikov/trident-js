@@ -1,7 +1,8 @@
 <html>
 
 <head>
-<script type='text/javascript' src='../trident.js'></script>
+  <script type='text/javascript' src='../trident.js'></script>
+  <script type='text/javascript' src='ballVisualizer.js'></script>
 
 <script>
 
@@ -34,12 +35,25 @@ function draw() {
   }
 }
 
+function drawVisualizer() {
+  var canvas = document.getElementById("visualizerCanvas");
+  if (canvas.getContext) {
+    var ctx = canvas.getContext("2d");
+    
+    var w = canvas.width;
+    var h = canvas.height;
+    
+    visualizer.draw(ctx, w, h);
+  }
+}
+
 </script>
 
 </head>
 
-<body onload="draw()">
-  <canvas id="ballCanvas" width="200" height="200"></canvas><br>
+<body onload="draw(); drawVisualizer();">
+  <canvas id="ballCanvas" width="400" height="200"></canvas><br>
+  <canvas id="visualizerCanvas" width="400" height="200"></canvas><br>
   
   <input type="button" name="buttonDown" value="down" onClick="timeline.play()">
   <input type="button" name="buttonUp" value="up" onClick="timeline.playReverse()">
@@ -58,6 +72,8 @@ function draw() {
   <div id="stateTracking"/>
   
   <script>
+    var visualizer = new TimelineVisualizer();
+
     var timeline = new Timeline(ball);
     timeline.addPropertiesToInterpolate([
       // interpolate the ball Y position
@@ -66,7 +82,7 @@ function draw() {
         to: document.getElementById("ballCanvas").height - ball.radius, 
         interpolator: new IntPropertyInterpolator() }
     ]);
-    var drawCallback = function(timelinePosition) {
+    var drawCallback = function(durationFraction, timelinePosition) {
       draw();
     }
     var reportStateChange = function(oldState, newState, durationFraction, timelinePosition) {
@@ -77,8 +93,24 @@ function draw() {
     timeline.addCallbacks([
       { onTimelinePulse: drawCallback, onTimelineStateChanged: reportStateChange }
     ]);
+    var visualizerCallback = function(durationFraction, timelinePosition) {
+      visualizer.addDot(durationFraction, timelinePosition);
+    }
+    timeline.addCallbacks([
+      { onTimelinePulse: visualizerCallback }
+    ]);
     timeline.duration = 2000;
-    timeline.initialDelay = 1000;
+    timeline.initialDelay = 0;
+
+    var visualizerRepaintTimeline = new Timeline();
+    visualizerRepaintTimeline.addCallbacks([
+      { onTimelinePulse: function() {
+          drawVisualizer();
+        }
+      }
+    ]);
+    visualizerRepaintTimeline.playInfiniteLoop(RepeatBehavior.REVERSE);
+
   </script>
 </body>
 

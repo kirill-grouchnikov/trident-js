@@ -424,7 +424,7 @@ function Timeline(mainObject) {
     for (var i=0; i<callbacks.length; i++) {
       var callbackOnPulse = callbacks[i].onTimelinePulse;
       if (callbackOnPulse != undefined) {
-        callbackOnPulse(this.timelinePosition);
+        callbackOnPulse(this.durationFraction, this.timelinePosition);
       }
     }
     var properties = getProperties();
