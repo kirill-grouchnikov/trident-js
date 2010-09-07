@@ -301,7 +301,7 @@ function Timeline(mainObject) {
 
   stateStack.push(TimelineState.IDLE);
 
-  var getMainObject = function() {
+  this.getMainObject = function() {
     return mainObject;
   }
 
@@ -328,7 +328,7 @@ function Timeline(mainObject) {
   }
 
   this.addPropertyToInterpolate = function(field, from, to, interpolator) {
-    var propInfo = new PropertyInfo(getMainObject(), field, from, to, interpolator);
+    var propInfo = new PropertyInfo(this.getMainObject(), field, from, to, interpolator);
     addProperty(propInfo);
   }
 
@@ -340,12 +340,12 @@ function Timeline(mainObject) {
 
       var keyFrames = propDefinition["goingThrough"];
       if (keyFrames != undefined) {
-        var propInfo = new KeyFramesPropertyInfo(getMainObject(), propName, keyFrames, interpolator);
+        var propInfo = new KeyFramesPropertyInfo(this.getMainObject(), propName, keyFrames, interpolator);
         addProperty(propInfo);
       } else {
         var from = propDefinition["from"];
         var to = propDefinition["to"];
-        var propInfo = new PropertyInfo(getMainObject(), propName, from, to, interpolator);
+        var propInfo = new PropertyInfo(this.getMainObject(), propName, from, to, interpolator);
         addProperty(propInfo);
       }
     }
@@ -613,7 +613,7 @@ function Timeline(mainObject) {
     for (var i=0; i<callbacks.length; i++) {
       var callbackOnPulse = callbacks[i].onTimelinePulse;
       if (callbackOnPulse != undefined) {
-        callbackOnPulse(this.durationFraction, this.timelinePosition);
+        callbackOnPulse(this, this.durationFraction, this.timelinePosition);
       }
     }
     var properties = getProperties();
@@ -629,7 +629,7 @@ function Timeline(mainObject) {
     for (var i=0; i<callbacks.length; i++) {
       var callbackOnStateChanged = callbacks[i].onTimelineStateChanged;
       if (callbackOnStateChanged != undefined) {
-        callbackOnStateChanged(oldState, this.getState(), 
+        callbackOnStateChanged(this, oldState, this.getState(), 
           this.durationFraction, this.timelinePosition);
       }
     }
