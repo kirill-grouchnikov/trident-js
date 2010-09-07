@@ -181,7 +181,12 @@ function KeyFrames(timeValueMap, propertyInterpolator, ease) {
     var __keyTimes = new Array();
     for (var keyTime in timeValueMap) {
       __keyTimes[__keyTimes.length] = keyTime;
-      __keyValues[__keyValues.length] = timeValueMap[keyTime];
+    }
+    __keyTimes.sort();
+    for (var i=0; i<__keyTimes.length; i++) {
+      var k = __keyTimes[i];
+      var v = timeValueMap[k];
+      __keyValues[__keyValues.length] = v;
     }
     var numFrames = __keyValues.length;
     this.keyTimes = new KeyTimes(__keyTimes);
