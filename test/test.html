@@ -7,10 +7,10 @@
 function myclick(duration, span) {
   var timeline = new Timeline();
   timeline.duration = duration;
-  var spanCallback = function(timelinePosition) {
+  var spanCallback = function(timeline, timelinePosition) {
     span.innerHTML = span.id + ": " + 100*timelinePosition + "%<br>";
   }
-  var spanColorCallback = function(timelinePosition) {
+  var spanColorCallback = function(timeline, timelinePosition) {
     var redHex = parseInt(parseFloat(255*timelinePosition)).toString(16);
     span.style.color = "#" + redHex + "0000";
   }

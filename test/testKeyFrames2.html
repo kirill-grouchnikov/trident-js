@@ -17,7 +17,7 @@ function myclick() {
       interpolator: new FloatPropertyInterpolator() }
   ]);
   timeline.addCallbacks([
-    { onTimelinePulse: function(durationFraction, timelinePosition) {
+    { onTimelinePulse: function(timeline, durationFraction, timelinePosition) {
         mySpan1.innerHTML += (timelinePosition + ":" + myobj.fvalue + "<br>");
       } 
     }

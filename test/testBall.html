@@ -82,10 +82,10 @@ function drawVisualizer() {
         to: document.getElementById("ballCanvas").height - ball.radius, 
         interpolator: new IntPropertyInterpolator() }
     ]);
-    var drawCallback = function(durationFraction, timelinePosition) {
+    var drawCallback = function(timeline, durationFraction, timelinePosition) {
       draw();
     }
-    var reportStateChange = function(oldState, newState, durationFraction, timelinePosition) {
+    var reportStateChange = function(timeline, oldState, newState, durationFraction, timelinePosition) {
       stateTracking.innerHTML += ("From " + oldState + " to " + newState + 
         " at " + timelinePosition + "<br>");
       draw();
@@ -93,7 +93,7 @@ function drawVisualizer() {
     timeline.addCallbacks([
       { onTimelinePulse: drawCallback, onTimelineStateChanged: reportStateChange }
     ]);
-    var visualizerCallback = function(durationFraction, timelinePosition) {
+    var visualizerCallback = function(timeline, durationFraction, timelinePosition) {
       visualizer.addDot(durationFraction, timelinePosition);
     }
     timeline.addCallbacks([
@@ -104,7 +104,7 @@ function drawVisualizer() {
 
     var visualizerRepaintTimeline = new Timeline();
     visualizerRepaintTimeline.addCallbacks([
-      { onTimelinePulse: function() {
+      { onTimelinePulse: function(timeline, durationFraction, timelinePosition) {
           drawVisualizer();
         }
       }

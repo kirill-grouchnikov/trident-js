@@ -7,8 +7,8 @@
 function myclick() {
   var frames = new KeyFrames(
     { 0: 0, 0.4: 1, 1: 0.2},
-    new LinearEase(),
-    new FloatPropertyInterpolator()
+    new FloatPropertyInterpolator(),
+    new LinearEase()
   );
   mySpan1.innerHTML += ("0 :" + frames.getValue(0) + "<br>");
   mySpan1.innerHTML += ("0.25 :" + frames.getValue(0.25) + "<br>");
