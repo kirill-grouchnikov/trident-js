@@ -81,9 +81,22 @@ function run() {
   ]);
   
   timelineBallFalling.duration = 2000;
-  timelineBallFalling.ease = new SineEase();
   timelineBallFalling.initialDelay = document.getElementById("initialDelay").value;
   timelineBallFalling.cycleDelay = document.getElementById("cycleDelay").value;
+
+  var selectedEaseIndex = parseInt(document.getElementById("ease").value);
+  var selectedEase;
+  switch (selectedEaseIndex) {
+    case 1: selectedEase = new LinearEase(); break;
+    case 2: selectedEase = new SineEase(); break;
+    case 3: selectedEase = new SplineEase(0.1, 0.0, 0.9, 1.0); break;
+    case 4: selectedEase = new SplineEase(0.2, 0.0, 0.8, 1.0); break;
+    case 5: selectedEase = new SplineEase(0.5, 0.0, 0.5, 1.0); break;
+    case 6: selectedEase = new SplineEase(0.8, 0.0, 0.2, 1.0); break;
+    case 7: selectedEase = new SplineEase(0.9, 0.0, 0.1, 1.0); break;
+    case 8: selectedEase = new SplineEase(1.0, 0.0, 0.0, 1.0); break;
+  }
+  timelineBallFalling.ease = selectedEase;
 
   var msToSkip = parseInt(document.getElementById("toSkip").value);
   if (msToSkip == 0) {
@@ -125,7 +138,18 @@ function resume() {
   <input id="cycleDelay" value="0"><br>
   To skip:
   <input id="toSkip" value="0"><br>
-
+  Ease:
+  <select id="ease">
+  <option value="1">1. Linear</option>
+  <option value="2">2. Sine</option>
+  <option value="3">3. Spline (0.1, 0.0)-(0.9,1.0)</option>
+  <option value="4">4. Spline (0.2, 0.0)-(0.8,1.0)</option>
+  <option value="5">5. Spline (0.5, 0.0)-(0.5,1.0)</option>
+  <option value="6">6. Spline (0.8, 0.0)-(0.2,1.0)</option>
+  <option value="7">7. Spline (0.9, 0.0)-(0.1,1.0)</option>
+  <option value="8">8. Spline (1.0, 0.0)-(0.9,1.0)</option>
+  </select><br>
+  
   <input type="button" name="buttonRun" value="run" onClick="run()">
   <input type="button" name="buttonCancel" value="cancel" onClick="cancel()">
   <input type="button" name="buttonSuspend" value="suspend" onClick="suspend()">

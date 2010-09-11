@@ -1,0 +1,24 @@
+<html>
+
+<head>
+<script type='text/javascript' src='../trident.js'></script>
+
+<script>
+function myclick() {
+  var spline = new SplineEase(0.2, 0.0, 0.8, 1.0);
+  mySpan1.innerHTML += ("0 :" + spline.map(0) + "<br>");
+  mySpan1.innerHTML += ("0.25 :" + spline.map(0.25) + "<br>");
+  mySpan1.innerHTML += ("0.5 :" + spline.map(0.5) + "<br>");
+  mySpan1.innerHTML += ("0.75 :" + spline.map(0.75) + "<br>");
+  mySpan1.innerHTML += ("1 :" + spline.map(1) + "<br>");
+}
+
+</script>
+</head>
+
+<body>
+  <input type="button" name="button1" value="spline" onClick="myclick()"><br>
+  <div id="mySpan1"/>
+</body>
+
+</html>
