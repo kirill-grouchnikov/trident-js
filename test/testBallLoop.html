@@ -84,7 +84,13 @@ function run() {
   timelineBallFalling.ease = new SineEase();
   timelineBallFalling.initialDelay = document.getElementById("initialDelay").value;
   timelineBallFalling.cycleDelay = document.getElementById("cycleDelay").value;
-  timelineBallFalling.playInfiniteLoop(RepeatBehavior.REVERSE);
+
+  var msToSkip = parseInt(document.getElementById("toSkip").value);
+  if (msToSkip == 0) {
+    timelineBallFalling.playInfiniteLoop(RepeatBehavior.REVERSE);
+  } else {
+    timelineBallFalling.playInfiniteLoopSkipping(RepeatBehavior.REVERSE, msToSkip);
+  }
 }
 
 function cancel() {
@@ -117,6 +123,8 @@ function resume() {
   <input id="initialDelay" value="0"><br>
   Cycle delay:
   <input id="cycleDelay" value="0"><br>
+  To skip:
+  <input id="toSkip" value="0"><br>
 
   <input type="button" name="buttonRun" value="run" onClick="run()">
   <input type="button" name="buttonCancel" value="cancel" onClick="cancel()">

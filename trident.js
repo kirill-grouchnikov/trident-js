@@ -418,8 +418,15 @@ function Timeline(mainObject) {
   }
   
   this.play = function() {
+    this.playSkipping(false, 0);
+  }
+
+  this.playSkipping = function(msToSkip) {
+    if ((this.initialDelay + this.duration) < msToSkip) {
+      throw new IllegalArgumentException("Required skip longer than initial delay + duration");
+    }
     this.isLooping = false;
-    this.__play(false, 0);
+    this.__play(false, msToSkip);
   }
 
   this.replay = function() {
@@ -433,7 +440,7 @@ function Timeline(mainObject) {
       var oldState = this.getState();
       this.timeUntilPlay = this.initialDelay - msToSkip;
       if (this.timeUntilPlay < 0) {
-        this.durationFraction = 1 - this.timeUntilPlay / this.duration;
+        this.durationFraction = 1 + this.timeUntilPlay / this.duration;
         this.timelinePosition = this.ease.map(this.durationFraction);
         this.timeUntilPlay = 0;
       } else {
@@ -469,8 +476,15 @@ function Timeline(mainObject) {
   }
 
   this.playReverse = function() {
+    this.playReverseSkipping(false, 0);
+  }
+
+  this.playReverseSkipping = function(msToSkip) {
+    if ((this.initialDelay + this.duration) < msToSkip) {
+      throw "Required skip longer than initial delay + duration";
+    }
     this.isLooping = false;
-    this.__playReverse(false, 0);
+    this.__playReverse(false, msToSkip);
   }
 
   this.replayReverse = function() {
@@ -503,6 +517,9 @@ function Timeline(mainObject) {
   }
 
   this.playLoopSkipping = function(loopCount, repeatBehavior, msToSkip) {
+    if ((this.initialDelay + this.duration) < msToSkip) {
+      throw "Required skip longer than initial delay + duration";
+    }
     this.isLooping = true;
     this.repeatCount = loopCount;
     this.repeatBehavior = repeatBehavior;

@@ -71,6 +71,7 @@
         radgrad.addColorStop(0.6, radRgba1);
         radgrad.addColorStop(1, radRgba2);
         ctx.fillStyle = radgrad;
+        ctx.strokeStyle = undefined;
         ctx.fill();
         
         var d1 = Math.cos(this.angle) * this.size / 3;
@@ -88,6 +89,7 @@
         radgrad2.addColorStop(0, "rgba(255, 255, 255, " + 0.4 * a +")");
         radgrad2.addColorStop(1, "rgba(255, 255, 255, " + 0.12 * a +")");
         ctx.fillStyle = radgrad2;
+        ctx.strokeStyle = undefined;
         ctx.fill();
 
         var linRgba1 = "rgba(255, 255, 255, " + 0.06 * a + ")";

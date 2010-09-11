@@ -54,9 +54,12 @@ function drawVisualizer() {
 <body onload="draw(); drawVisualizer();">
   <canvas id="ballCanvas" width="400" height="200"></canvas><br>
   <canvas id="visualizerCanvas" width="400" height="200"></canvas><br>
-  
-  <input type="button" name="buttonDown" value="down" onClick="timeline.play()">
-  <input type="button" name="buttonUp" value="up" onClick="timeline.playReverse()">
+
+  To skip:
+  <input id="toSkip" value="0"><br>
+
+  <input type="button" name="buttonDown" value="down" onClick="play()">
+  <input type="button" name="buttonUp" value="up" onClick="playReverse()">
   -
   <input type="button" name="buttonReDown" value="down from top" onClick="timeline.replay()">
   <input type="button" name="buttonReUp" value="up from bottom" onClick="timeline.replayReverse()">
@@ -111,6 +114,23 @@ function drawVisualizer() {
     ]);
     visualizerRepaintTimeline.playInfiniteLoop(RepeatBehavior.REVERSE);
 
+    function play() {
+      var msToSkip = parseInt(document.getElementById("toSkip").value);
+      if (msToSkip == 0) {
+        timeline.play();
+      } else {
+        timeline.playSkipping(msToSkip);
+      }
+    }
+
+    function playReverse() {
+      var msToSkip = parseInt(document.getElementById("toSkip").value);
+      if (msToSkip == 0) {
+        timeline.playReverse();
+      } else {
+        timeline.playReverseSkipping(msToSkip);
+      }
+    }
   </script>
 </body>
 
