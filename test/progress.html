@@ -1,0 +1,160 @@
+<html>
+
+<head>
+  <script type='text/javascript' src='../trident.js'></script>
+
+</head>
+
+<body onload="draw();">
+  <center><canvas id="progress" width="600" height="400"></canvas></center><br>
+  <center>Frame render time: <span id="renderTime"></span> ms</center><br>
+  
+  <script>
+    var progress = document.getElementById("progress");
+    progress.addEventListener('mousedown', mousedown, false);
+
+    var INNER_HEIGHT = 60;
+    var INNER_WIDTH = 300;
+    var HIGHLIGHTER_HEIGHT = 2;
+    var HIGHLIGHTER_WIDTH = 58;
+    var started = false;
+    var progressTimeline;
+    var highlighter;
+    
+    function Highlighter() {
+      this.alpha = 0.0;
+      this.xPosition = 0.0;
+    }
+
+    function mousedown(e) {
+      if (started) {
+        if (progressTimeline.getState() != TimelineState.SUSPENDED) {
+          progressTimeline.suspend();
+        } else {
+          progressTimeline.resume();
+        }
+        return;
+      }
+      highlighter = new Highlighter();
+      progressTimeline = new Timeline(highlighter);
+
+      var canvas = document.getElementById("progress");
+      var ctx = canvas.getContext("2d");
+      var w = canvas.width;
+
+      var startX = (w - INNER_WIDTH) / 2 + 18 + HIGHLIGHTER_WIDTH / 2;
+      var endX = (w + INNER_WIDTH) / 2 - 18 - HIGHLIGHTER_WIDTH / 2;
+
+      progressTimeline.addPropertiesToInterpolate([
+        { property: "xPosition", from: startX, to: endX, interpolator: new IntPropertyInterpolator()},
+        { property: "alpha", 
+            goingThrough: { 0: 0.0, 0.3: 1.0, 0.7:1.0, 1: 0.0}, 
+            interpolator: new FloatPropertyInterpolator()}
+      ]);
+      progressTimeline.addCallbacks([
+        { onTimelinePulse: function(timeline, durationFraction, timelinePosition) {
+            draw();
+          }
+        }
+      ]);
+      progressTimeline.duration = 1500;
+      progressTimeline.playInfiniteLoop(RepeatBehavior.LOOP);
+
+      started = true;
+    }
+
+    // This method is from https://developer.mozilla.org/en/Canvas_tutorial/Drawing_shapes
+    function roundedRect(ctx,x,y,width,height,radius){  
+      ctx.beginPath();
+      ctx.moveTo(x,y+radius);  
+      ctx.lineTo(x,y+height-radius);  
+      ctx.quadraticCurveTo(x,y+height,x+radius,y+height);  
+      ctx.lineTo(x+width-radius,y+height);  
+      ctx.quadraticCurveTo(x+width,y+height,x+width,y+height-radius);  
+      ctx.lineTo(x+width,y+radius);  
+      ctx.quadraticCurveTo(x+width,y,x+width-radius,y);  
+      ctx.lineTo(x+radius,y);  
+      ctx.quadraticCurveTo(x,y,x,y+radius);  
+    }
+    
+    function ellipse(ctx, x, y, rx, ry) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(rx, ry);
+      ctx.beginPath();
+      ctx.arc(0, 0, 1, 0, 360, 0);
+      ctx.restore();
+    }
+    
+    function draw() {
+      var start = new Date().getTime();
+      var canvas = document.getElementById("progress");
+      if (canvas.getContext) {
+        var ctx = canvas.getContext("2d");
+
+        var w = canvas.width;
+        var h = canvas.height;
+        ctx.globalCompositeOperation = "source-over";
+        ctx.fillStyle = "rgb(12,12,12)";
+        ctx.fillRect(0,0,w,h);
+
+        var caption = started ? "Loading in progress..." : "Click to start";
+        ctx.fillStyle = "rgb(255,255,255)";
+        ctx.font = "14pt Tahoma";
+        ctx.textBaseline = "alphabetic";
+        ctx.fillText(caption, (w - ctx.measureText(caption).width) / 2, h / 3);
+
+        // Inner gradient fill
+        var lingrad1 = ctx.createLinearGradient((w - INNER_WIDTH) / 2.0,
+          (h - INNER_HEIGHT) / 2.0, (w - INNER_WIDTH) / 2.0, (h + INNER_HEIGHT) / 2.0);
+        lingrad1.addColorStop(0, "rgb(47,47,47)");
+        lingrad1.addColorStop(1, "rgb(0,0,0)");
+        ctx.fillStyle = lingrad1;
+        roundedRect(ctx, (w - INNER_WIDTH) / 2.0, (h - INNER_HEIGHT) / 2.0,
+          INNER_WIDTH, INNER_HEIGHT, 10);
+        ctx.fill();
+
+        // Inner contour
+        ctx.strokeStyle = "rgb(255, 255, 255)";
+        ctx.lineWidth = 0.2;
+        roundedRect(ctx, (w - INNER_WIDTH) / 2.0, (h - INNER_HEIGHT) / 2.0,
+          INNER_WIDTH, INNER_HEIGHT, 10);
+        ctx.stroke();
+
+        // Progress track
+        var trackWidth = INNER_WIDTH - 36;
+        var trackHeight = 1;
+        for (var i = 2; i >= 0; i--) {
+          var alpha = 1.0;
+          if (i == 1)
+            alpha = 0.3;
+          if (i == 2)
+            alpha = 0.1;
+          ctx.strokeStyle = "rgba(121,121,121," + alpha + ")";
+          ctx.lineWidth = 1.0;
+          roundedRect(ctx, (w - INNER_WIDTH) / 2 + 18 - i, h / 2 - i - 1,
+            trackWidth + i * 2, trackHeight + i * 2, 2 * i);
+          ctx.stroke();
+        }
+
+        if (highlighter != undefined) {
+          // Highlighter
+          ctx.fillStyle = "rgba(13, 106, 206, " + 0.1*highlighter.alpha + ")";
+          for (var i = 6; i >= 0; i--) {
+            ellipse(ctx, highlighter.xPosition, h / 2,
+              HIGHLIGHTER_WIDTH / 2 + i, HIGHLIGHTER_HEIGHT / 2 + i);
+            ctx.fill();
+          }
+
+          // Highlighter on track
+          ctx.fillStyle = "rgba(136, 182, 231, " + highlighter.alpha + ")";
+          ctx.fillRect(highlighter.xPosition - 28, h / 2 - 1, 56, 2);
+        }        
+        var end = new Date().getTime();
+        document.getElementById("renderTime").innerHTML = end - start;
+      }
+    }
+  </script>
+</body>
+
+</html>
