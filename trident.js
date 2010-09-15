@@ -36,10 +36,15 @@
 var lastTime = new Date().getTime();
 
 var timelineId = 0;
+var timelineScenarioId = 0;
 
 var TimelineState = {"IDLE":"IDLE", "READY":"READY", 
   "PLAYING_FORWARD":"PLAYING_FORWARD", "PLAYING_REVERSE":"PLAYING_REVERSE", 
   "SUSPENDED":"SUSPENDED", "CANCELLED":"CANCELLED", "DONE":"DONE"};
+
+var TimelineScenarioState = {"IDLE":"IDLE", 
+  "PLAYING_FORWARD":"PLAYING_FORWARD", 
+  "SUSPENDED":"SUSPENDED", "DONE":"DONE"};
 
 var RepeatBehavior = {"LOOP":"LOOP", "REVERSE":"REVERSE"};
 
@@ -444,6 +449,7 @@ function Timeline(mainObject) {
   this.cycleDelay = 0;
   this.repeatCount = -1;
   this.repeatBehavior;
+  this.doneCount = 0;
 
   var mainObject = mainObject;
   var callbacks = new Array;
@@ -520,6 +526,8 @@ function Timeline(mainObject) {
   }
 
   this.__pushState = function(state) {
+    if (state == TimelineState.DONE)
+      this.doneCount++;
     stateStack.push(state);
   }
 
@@ -527,9 +535,21 @@ function Timeline(mainObject) {
     stateStack.pop();
     this.__pushState(state);
   }
+  
+  this.isDone = function() {
+    return (this.doneCount > 0);
+  }
+
+  this.supportsReplay = function() {
+    return true;
+  }
+
+  this.resetDoneFlag = function() {
+    this.doneCount = 0;
+  }
 
   this.__play = function(reset, msToSkip) {
-    var existing = timelineSet[getId()];
+    var existing = runningTimelines[getId()];
     if (existing == undefined) {
       var oldState = this.getState();
       this.timeUntilPlay = this.initialDelay - msToSkip;
@@ -543,7 +563,7 @@ function Timeline(mainObject) {
       }
       this.__pushState(TimelineState.PLAYING_FORWARD);
       this.__pushState(TimelineState.READY);
-      timelineSet[getId()] = this;
+      runningTimelines[getId()] = this;
 
       this.__callbackCallTimelineStateChanged(oldState);
     } else {
@@ -587,7 +607,7 @@ function Timeline(mainObject) {
   }
 
   this.__playReverse = function(reset, msToSkip) {
-    var existing = timelineSet[getId()];
+    var existing = runningTimelines[getId()];
     if (existing == undefined) {
       var oldState = this.getState();
       this.timeUntilPlay = this.initialDelay - msToSkip;
@@ -601,7 +621,7 @@ function Timeline(mainObject) {
       }
       this.__pushState(TimelineState.PLAYING_REVERSE);
       this.__pushState(TimelineState.READY);
-      timelineSet[getId()] = this;
+      runningTimelines[getId()] = this;
 
       this.__callbackCallTimelineStateChanged(oldState);
     } else {
@@ -645,7 +665,7 @@ function Timeline(mainObject) {
   }
 
   this.__playLoop = function(msToSkip) {
-    var existing = timelineSet[getId()];
+    var existing = runningTimelines[getId()];
     if (existing == undefined) {
       var oldState = this.getState();
       this.timeUntilPlay = this.initialDelay - msToSkip;
@@ -661,7 +681,7 @@ function Timeline(mainObject) {
       this.__pushState(TimelineState.READY);
       this.toCancelAtCycleBreak = false;
 
-      timelineSet[getId()] = this;
+      runningTimelines[getId()] = this;
       this.__callbackCallTimelineStateChanged(oldState);
     } else {
       this.toCancelAtCycleBreak = false;
@@ -695,11 +715,11 @@ function Timeline(mainObject) {
   }
 
   this.cancel = function() {
-    var existing = timelineSet[getId()];
+    var existing = runningTimelines[getId()];
     if (existing == undefined) {
       return;
     }
-    delete timelineSet[getId()];
+    delete runningTimelines[getId()];
     var oldState = this.getState();
     while (this.getState() != TimelineState.IDLE) {
       this.__popState();
@@ -711,11 +731,11 @@ function Timeline(mainObject) {
   }
 
   this.end = function() {
-    var existing = timelineSet[getId()];
+    var existing = runningTimelines[getId()];
     if (existing == undefined) {
       return;
     }
-    delete timelineSet[getId()];
+    delete runningTimelines[getId()];
     var oldState = timeline.getState();
     var endFraction = timeline.durationFraction;
     while (this.getState() != TimelineState.IDLE) {
@@ -737,18 +757,18 @@ function Timeline(mainObject) {
   }
 
   this.abort = function() {
-    var existing = timelineSet[getId()];
+    var existing = runningTimelines[getId()];
     if (existing == undefined) {
       return;
     }
-    delete timelineSet[getId()];
+    delete runningTimelines[getId()];
     while (this.getState() != TimelineState.IDLE) {
       this.__popState();
     }
   }
 
   this.suspend = function() {
-    var existing = timelineSet[getId()];
+    var existing = runningTimelines[getId()];
     if (existing == undefined) {
       return;
     }
@@ -763,7 +783,7 @@ function Timeline(mainObject) {
   }
 
   this.resume = function() {
-    var existing = timelineSet[getId()];
+    var existing = runningTimelines[getId()];
     if (existing == undefined) {
       return;
     }
@@ -809,7 +829,229 @@ function Timeline(mainObject) {
   }
 }
 
-var timelineSet = {};
+function TimelineScenarioCallback(callbackDef) {
+  this.onTimelineScenarioDone = callbackDef["onTimelineScenarioDone"];
+}
+
+function TimelineScenario() {
+  this.waitingActors = new Array();
+  this.runningActors = new Array();
+  this.doneActors = new Array();
+  this.mapping = new Array();
+  
+  this.dependencies = {};
+  this.callback;
+  this.state = undefined;
+  this.statePriorToSuspension = undefined;
+  this.isLooping = false;
+  var id = timelineId++;
+
+  var callbacks = [];
+
+  var getId = function() {
+    return id;
+  }
+  
+  var getCallbacks = function() {
+    return callbacks;
+  }
+
+  var addCallback = function(callback) {
+    var currCallbacks = getCallbacks();
+    currCallbacks[currCallbacks.length] = callback;
+  }
+
+  this.addCallbacks = function(callbacks) {
+    for (var i=0; i<callbacks.length; i++) {
+      var callbackDefinition = callbacks[i];
+      var callbackInfo = new TimelineScenarioCallback(callbackDefinition);
+      addCallback(callbackInfo);
+    }
+  }
+  
+  this.addScenarioActor = function(scenarioActor) {
+    if (scenarioActor.isDone()) {
+      throw "Already finished";
+    }
+    this.waitingActors[this.waitingActors.length] = scenarioActor;
+    this.mapping[this.mapping.length] = scenarioActor;
+  }
+  
+  this.actorToId = function(scenarioActor) {
+    return this.mapping.indexOf(scenarioActor);
+  }
+  
+  this.idToActor = function(id) {
+    return this.mapping[id];
+  }
+  
+  this.__checkDependencyParam = function(scenarioActor) {
+    if (this.waitingActors.indexOf(scenarioActor) == -1) {
+      throw "Must be first added with addScenarioActor() API";
+    }
+  }
+  
+  this.addDependency = function(actor, waitFor) {
+    // check params
+    this.__checkDependencyParam(actor);
+    for (var i = 0; i < waitFor.length; i++) {
+      var wait = waitFor[i];
+      this.__checkDependencyParam(wait);
+    }
+
+    var actorId = this.actorToId(actor);
+    if (this.dependencies[actorId] == undefined) {
+      this.dependencies[actorId] = new Array();
+    }
+    var deps = this.dependencies[actorId];
+    for (var i = 0; i < waitFor.length; i++) {
+      var wait = waitFor[i];
+      deps[deps.length] = wait;
+    }
+  }
+
+  this.__checkDoneActors = function() {
+    for (var i=this.runningActors.length-1; i>=0; i--) {
+      var stillRunning = this.runningActors[i];
+      if (stillRunning.isDone()) {
+        this.doneActors[this.doneActors.length] = stillRunning;
+        this.runningActors.splice(i, 1);
+      }
+    }
+  }
+
+  this.getReadyActors = function() {
+    if (this.state == TimelineScenarioState.SUSPENDED)
+      return [];
+
+    this.__checkDoneActors();
+
+    var result = new Array();
+    for (var i=this.waitingActors.length - 1; i>=0; i--) {
+      var waitingActor = this.waitingActors[i];
+      var canRun = true;
+      var waitingActorId = this.actorToId(waitingActor);
+      var toWaitFor = this.dependencies[waitingActorId];
+      if (toWaitFor != undefined) {
+        for (var j = 0; j < toWaitFor.length; j++) {
+          var actorToWaitFor = toWaitFor[j];
+          if (this.doneActors.indexOf(actorToWaitFor) == -1) {
+            canRun = false;
+            break;
+          }
+        }
+      }
+      if (canRun) {
+        this.runningActors[this.runningActors.length] = waitingActor;
+        this.waitingActors.splice(i, 1);
+        result[result.length] = waitingActor;
+      }
+    }
+
+    if ((this.waitingActors.length == 0) && (this.runningActors.length == 0)) {
+      if (!this.isLooping) {
+        this.state = TimelineScenarioState.DONE;
+      } else {
+        for (var i = 0; i < this.doneActors.length; i++) {
+          var done = this.doneActors[i];
+          done.resetDoneFlag();
+          this.waitingActors[this.waitingActors.length] = done;
+        }
+        this.doneActors.length = 0;
+      }
+    }
+    return result;
+  }
+
+  this.cancel = function() {
+    var oldState = this.state;
+    if (oldState != TimelineScenarioState.PLAYING)
+      return;
+    this.state = TimelineScenarioState.DONE;
+
+    for (var i = 0; i < this.waitingActors.length; i++) {
+      var waiting = this.waitingActors[i];
+      if (waiting instanceof Timeline) {
+        waiting.cancel();
+      }
+    }
+    for (var i = 0; i < this.runningActors.length; i++) {
+      var running = this.runningActors[i];
+      if (running instanceof Timeline) {
+        running.cancel();
+      }
+    }
+  }
+
+  this.suspend = function() {
+    var oldState = this.state;
+    if (oldState != TimelineScenarioState.PLAYING)
+      return;
+    this.statePriorToSuspension = oldState;
+    this.state = TimelineScenarioState.SUSPENDED;
+
+    for (var i = 0; i < this.runningActors.length; i++) {
+      var running = this.runningActors[i];
+      if (running instanceof Timeline) {
+        running.suspend();
+      }
+    }
+  }
+
+  this.resume = function() {
+    var oldState = this.state;
+    if (oldState != TimelineScenarioState.SUSPENDED)
+      return;
+    this.state = this.statePriorToSuspension;
+
+    for (var i = 0; i < this.runningActors.length; i++) {
+      var running = this.runningActors[i];
+      if (running instanceof Timeline) {
+        running.resume();
+      }
+    }
+  }
+  
+  this.play = function() {
+    this.isLooping = false;
+    this.state = TimelineScenarioState.PLAYING;
+    this.__playScenario();
+  }
+
+  this.playLoop = function() {
+    for (var i = 0; i < this.waitingActors.length; i++) {
+      var actor = this.waitingActors[i];
+      if (!actor.supportsReplay())
+      throw "Can't loop scenario with actor(s) that don't support replay";
+    }
+    this.isLooping = true;
+    this.state = TimelineScenarioState.PLAYING;
+    this.__playScenario();
+  }
+  
+  this.__playScenario = function() {
+    var readyActors = this.getReadyActors();
+    
+    runningScenarios[getId()] = this;
+    for (var i = 0; i < readyActors.length; i++) {
+      var readyActor = readyActors[i];
+      readyActor.play();
+    }
+  }
+  
+  this.__callbackCallTimelineScenarioEnded = function() {
+    var callbacks = getCallbacks();
+    for (var i=0; i<callbacks.length; i++) {
+      var callbackOnScenarioDone = callbacks[i].onTimelineScenarioDone;
+      if (callbackOnScenarioDone != undefined) {
+        callbackOnScenarioDone(this);
+      }
+    }
+  }
+}
+
+var runningTimelines = {};
+var runningScenarios = {};
 
 setInterval("globalTimerCallback()", 40);
 
@@ -818,9 +1060,9 @@ globalTimerCallback = function() {
   var passedSinceLastIteration = currTime - lastTime;
   var liveTimelines = 0;
   var totalTimelines = 0;
-  for (var timelineId in timelineSet) {
+  for (var timelineId in runningTimelines) {
     totalTimelines++;
-    var timeline = timelineSet[timelineId];
+    var timeline = runningTimelines[timelineId];
     var timelineState = timeline.getState();
     
     if (timeline.getState() == TimelineState.SUSPENDED) {
@@ -929,11 +1171,29 @@ globalTimerCallback = function() {
       timeline.__callbackCallTimelineStateChanged(oldState);
       timeline.__popState();
       timeline.__callbackCallTimelineStateChanged(TimelineState.DONE);
-      delete timelineSet[timelineId];
+      delete runningTimelines[timelineId];
     } else {
       liveTimelines++;
     }
   }
+  
+  for (var scenarioId in runningScenarios) {
+    var scenario = runningScenarios[scenarioId];
+    var scenarioState = scenario.state;
+    if (scenarioState == TimelineScenarioState.DONE) {
+      delete runningScenarios[scenarioId];
+      scenario.__callbackCallTimelineScenarioEnded();
+      continue;
+    }
+    var readyActors = scenario.getReadyActors();
+    if (readyActors.length > 0) {
+      for (var i = 0; i < readyActors.length; i++) {
+        var readyActor = readyActors[i];
+        readyActor.play();
+      }
+    }
+  }
+	
 //  document.title = liveTimelines + " live timeline(s) out of " + totalTimelines;
   lastTime = currTime;
 }
