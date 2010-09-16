@@ -869,14 +869,6 @@ function TimelineScenario() {
     }
   }
   
-  this.addScenarioActor = function(scenarioActor) {
-    if (scenarioActor.isDone()) {
-      throw "Already finished";
-    }
-    this.waitingActors[this.waitingActors.length] = scenarioActor;
-    this.mapping[this.mapping.length] = scenarioActor;
-  }
-  
   this.actorToId = function(scenarioActor) {
     return this.mapping.indexOf(scenarioActor);
   }
@@ -891,25 +883,6 @@ function TimelineScenario() {
     }
   }
   
-  this.addDependency = function(actor, waitFor) {
-    // check params
-    this.__checkDependencyParam(actor);
-    for (var i = 0; i < waitFor.length; i++) {
-      var wait = waitFor[i];
-      this.__checkDependencyParam(wait);
-    }
-
-    var actorId = this.actorToId(actor);
-    if (this.dependencies[actorId] == undefined) {
-      this.dependencies[actorId] = new Array();
-    }
-    var deps = this.dependencies[actorId];
-    for (var i = 0; i < waitFor.length; i++) {
-      var wait = waitFor[i];
-      deps[deps.length] = wait;
-    }
-  }
-
   this.__checkDoneActors = function() {
     for (var i=this.runningActors.length-1; i>=0; i--) {
       var stillRunning = this.runningActors[i];
@@ -1012,23 +985,6 @@ function TimelineScenario() {
     }
   }
   
-  this.play = function() {
-    this.isLooping = false;
-    this.state = TimelineScenarioState.PLAYING;
-    this.__playScenario();
-  }
-
-  this.playLoop = function() {
-    for (var i = 0; i < this.waitingActors.length; i++) {
-      var actor = this.waitingActors[i];
-      if (!actor.supportsReplay())
-      throw "Can't loop scenario with actor(s) that don't support replay";
-    }
-    this.isLooping = true;
-    this.state = TimelineScenarioState.PLAYING;
-    this.__playScenario();
-  }
-  
   this.__playScenario = function() {
     var readyActors = this.getReadyActors();
     
@@ -1049,6 +1005,122 @@ function TimelineScenario() {
     }
   }
 }
+
+TimelineScenario.prototype.addScenarioActor = function(scenarioActor) {
+  if (scenarioActor.isDone()) {
+    throw "Already finished";
+  }
+  this.waitingActors[this.waitingActors.length] = scenarioActor;
+  this.mapping[this.mapping.length] = scenarioActor;
+}
+
+TimelineScenario.prototype.addDependency = function(actor, waitFor) {
+  // check params
+  this.__checkDependencyParam(actor);
+  for (var i = 0; i < waitFor.length; i++) {
+    var wait = waitFor[i];
+    this.__checkDependencyParam(wait);
+  }
+
+  var actorId = this.actorToId(actor);
+  if (this.dependencies[actorId] == undefined) {
+    this.dependencies[actorId] = new Array();
+  }
+  var deps = this.dependencies[actorId];
+  for (var i = 0; i < waitFor.length; i++) {
+    var wait = waitFor[i];
+    deps[deps.length] = wait;
+  }
+}
+
+TimelineScenario.prototype.play = function() {
+  this.isLooping = false;
+  this.state = TimelineScenarioState.PLAYING;
+  this.__playScenario();
+}
+
+TimelineScenario.prototype.playLoop = function() {
+  for (var i = 0; i < this.waitingActors.length; i++) {
+    var actor = this.waitingActors[i];
+    if (!actor.supportsReplay())
+    throw "Can't loop scenario with actor(s) that don't support replay";
+  }
+  this.isLooping = true;
+  this.state = TimelineScenarioState.PLAYING;
+  this.__playScenario();
+}
+
+ParallelScenario.prototype = new TimelineScenario();
+ParallelScenario.prototype.constructor = ParallelScenario;
+function ParallelScenario() {
+}
+ParallelScenario.prototype.addDependency = function(actor, waitFor) {
+  throw "Explicit dependencies not supported";
+}
+
+SequenceScenario.prototype = new TimelineScenario();
+SequenceScenario.prototype.constructor = SequenceScenario;
+function SequenceScenario() {
+  this.lastActor = undefined;
+}
+SequenceScenario.prototype.addDependency = function(actor, waitFor) {
+  throw "Explicit dependencies not supported";
+}
+
+SequenceScenario.prototype.addScenarioActor = function(scenarioActor) {
+  TimelineScenario.prototype.addScenarioActor.call(this, scenarioActor);
+  if (this.lastActor != undefined) {
+    TimelineScenario.prototype.addDependency.call(this, scenarioActor, [this.lastActor]);
+  }
+  this.lastActor = scenarioActor;
+}
+
+RendezvousScenario.prototype = new TimelineScenario();
+RendezvousScenario.prototype.constructor = ParallelScenario;
+function RendezvousScenario() {
+  this.addedSinceLastRendezvous = new Array();
+  this.addedPriorToLastRendezvous = new Array();
+}
+RendezvousScenario.prototype.addDependency = function(actor, waitFor) {
+  throw "Explicit dependencies not supported";
+}
+
+RendezvousScenario.prototype.addScenarioActor = function(scenarioActor) {
+  TimelineScenario.prototype.addScenarioActor.call(this, scenarioActor);
+  this.addedSinceLastRendezvous[this.addedSinceLastRendezvous.length] = scenarioActor;
+}
+
+RendezvousScenario.prototype.rendezvous = function() {
+  // make all actors added since last rendezvous to wait for
+  // all actors added prior to last rendezvous
+  if (this.addedPriorToLastRendezvous.length > 0) {
+    for (var i=0; i<this.addedSinceLastRendezvous.length; i++) {
+      var sinceLast = this.addedSinceLastRendezvous[i];
+      TimelineScenario.prototype.addDependency.call(this, sinceLast, this.addedPriorToLastRendezvous);
+    }
+  }
+
+  this.addedPriorToLastRendezvous.length = 0;
+  for (var i=0; i<this.addedSinceLastRendezvous.length; i++) {
+    this.addedPriorToLastRendezvous[this.addedPriorToLastRendezvous.length] = 
+      this.addedSinceLastRendezvous[i];
+  }
+  this.addedSinceLastRendezvous.length = 0;
+}
+
+RendezvousScenario.prototype.play = function() {
+  // add last implicit rendezvous
+  this.rendezvous();
+  TimelineScenario.prototype.play.call(this);
+}
+
+RendezvousScenario.prototype.playLoop = function() {
+  // add last implicit rendezvous
+  this.rendezvous();
+  TimelineScenario.prototype.playLoop.call(this);
+}
+
+
 
 var runningTimelines = {};
 var runningScenarios = {};
