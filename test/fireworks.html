@@ -1,0 +1,194 @@
+<html>
+
+<head>
+  <script type='text/javascript' src='../trident.js'></script>
+
+</head>
+
+<body onload="draw();">
+  <center><canvas id="explosions" width="600" height="400"></canvas></center><br>
+  <center>Frame render time: <span id="renderTime"></span> ms</center><br>
+  
+  <script>
+    var explosions = document.getElementById("explosions");
+    explosions.addEventListener('mousedown', mousedown, false);
+    explosions.addEventListener('mouseup', mouseup, false);
+
+    function parseColor(color) {
+      if (color.indexOf("rgb(") == 0) {
+        var inside = color.substr(4, color.length - 5);
+        var splits = inside.split(",");
+        return [parseInt(splits[0]), parseInt(splits[1]), parseInt(splits[2])];
+      }
+      var r = parseInt(color.substring(1,3),16);
+      var g = parseInt(color.substring(3,5),16);
+      var b = parseInt(color.substring(5,7),16);
+      return [r, g, b];
+    }
+
+    function SingleExplosion(color, x, y, radius) {
+      this.x = x;
+      this.y = y;
+      this.radius = radius;
+      this.color = parseColor(color);
+      this.alpha = 1.0;
+
+      this.draw = function(ctx) {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, 360, false);
+        ctx.fillStyle = "rgba(" + this.color[0] + ", " + this.color[1] + ", " + this.color[2] + ", " + this.alpha + ")";
+        ctx.fill();
+      }
+    }
+    
+    function randomInt(max) {
+      return Math.floor(Math.random() * max);
+    }
+
+    function VolleyExplosion(x, y, color) {
+      this.x = x;
+      this.y = y;
+      this.color = color;
+      this.circles = new Array();
+
+      this.getExplosionScenario = function() {
+        var scenario = new ParallelScenario();
+
+        var duration = 1000 + randomInt(1000);
+        for (var i = 0; i < 18; i++) {
+          var dist = 50 + 10 * Math.random();
+          var radius = 2 + 2 * Math.random();
+          for (var delta = 0.6; delta <= 1.0; delta += 0.2) {
+            var circleRadius = radius * delta;
+
+            var degrees = 20.0 * (i + Math.random());
+            var radians = 2.0 * Math.PI * degrees / 360.0;
+
+            var initDist = delta * dist / 10.0;
+            var finalDist = delta * dist;
+            var initX = this.x + initDist * Math.cos(radians);
+            var initY = this.y + initDist * Math.sin(radians);
+            var finalX = this.x + finalDist * Math.cos(radians);
+            var finalY = this.y + finalDist * Math.sin(radians);
+
+            var circle = new SingleExplosion(this.color, initX, initY, circleRadius);
+            var timeline = new Timeline(circle);
+            timeline.addPropertiesToInterpolate([
+              { property: "x", from: initX, to: finalX, interpolator: new FloatPropertyInterpolator()},
+              { property: "y", from: initY, to: finalY, interpolator: new FloatPropertyInterpolator()},
+              { property: "alpha", 
+                goingThrough: { 0: 0.0, 0.2: 1.0, 1: 0.0}, 
+                interpolator: new FloatPropertyInterpolator()}
+            ]);
+            timeline.duration = duration - 200 + randomInt(400);
+            timeline.ease = new SplineEase(0.4, 0.0, 0.6, 1.0);
+
+            this.circles[this.circles.length] = circle;
+            scenario.addScenarioActor(timeline);
+          }
+        }
+
+        return scenario;
+      }
+
+      this.draw = function(ctx) {
+        for (var i=0; i<this.circles.length; i++) {
+          var circle = this.circles[i];
+          circle.draw(ctx);
+        }
+      }
+    }
+
+    var volleyExplosionCount = 0;
+    var volleyExplosions = new Array();
+    var volleyExplosionScenarios = new Array();
+    function addExplosions() {
+      var canvas = document.getElementById("explosions");
+      var w = canvas.width;
+      var h = canvas.height;
+
+      volleyExplosions.length = 0;
+      volleyExplosionScenarios.length = 0;
+      volleyExplosionCount = 0;
+      for (var i = 0; i < 5; i++) {
+        var r = randomInt(255);
+        var g = 100 + randomInt(155);
+        var b = 50 + randomInt(205);
+        var color = "rgb(" + r + "," + g + "," + b + ")";
+
+        var x = 60 + randomInt(w - 120);
+        var y = 60 + randomInt(h - 120);
+        var exp = new VolleyExplosion(x, y, color);
+        
+        volleyExplosions[volleyExplosions.length] = exp;
+        volleyExplosionCount++;
+        var scenario = exp.getExplosionScenario();
+        volleyExplosionScenarios[volleyExplosionScenarios.length] = scenario;
+        scenario.addCallbacks([
+          { onTimelineScenarioDone: function(timelineScenario) {
+              volleyExplosionCount--;
+              if (volleyExplosionCount == 0) {
+                setTimeout("addExplosions()", 40);
+              }
+            }
+          }
+        ]);
+        scenario.play();
+      }
+    }
+
+    addExplosions();
+    
+    var paintLoop = new Timeline();
+    paintLoop.addCallbacks([
+      { onTimelinePulse: function() {
+          draw();
+        }
+      }
+    ]);
+    paintLoop.playInfiniteLoop(RepeatBehavior.LOOP);
+    
+    function draw() {
+      var start = new Date().getTime();
+      var canvas = document.getElementById("explosions");
+      if (canvas.getContext) {
+        var ctx = canvas.getContext("2d");
+
+        var w = canvas.width;
+        var h = canvas.height;
+        ctx.globalCompositeOperation = "source-over";
+        ctx.fillStyle = "rgb(0,0,0)";
+        ctx.fillRect(0,0,w,h);
+        
+        for (var i=0; i<volleyExplosionScenarios.length; i++) {
+          var volleyExplosionScenario = volleyExplosionScenarios[i];
+          if (volleyExplosionScenario.state != TimelineScenarioState.DONE) {
+            volleyExplosions[i].draw(ctx);
+          }
+        }
+        var end = new Date().getTime();
+        document.getElementById("renderTime").innerHTML = end - start;
+      }
+    }
+    
+    function mousedown(e) {
+      for (var i=0; i<volleyExplosionScenarios.length; i++) {
+        var volleyExplosionScenario = volleyExplosionScenarios[i];
+        if (volleyExplosionScenario.state != TimelineScenarioState.DONE) {
+          volleyExplosionScenario.suspend();
+        }
+      }
+    }
+  
+    function mouseup(e) {
+      for (var i=0; i<volleyExplosionScenarios.length; i++) {
+        var volleyExplosionScenario = volleyExplosionScenarios[i];
+        if (volleyExplosionScenario.state == TimelineScenarioState.SUSPENDED) {
+          volleyExplosionScenario.resume();
+        }
+      }
+    }
+  </script>
+</body>
+
+</html>
