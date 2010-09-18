@@ -119,15 +119,12 @@
         volleyExplosionCount++;
         var scenario = exp.getExplosionScenario();
         volleyExplosionScenarios[volleyExplosionScenarios.length] = scenario;
-        scenario.addCallbacks([
-          { onTimelineScenarioDone: function(timelineScenario) {
-              volleyExplosionCount--;
-              if (volleyExplosionCount == 0) {
-                setTimeout("addExplosions()", 40);
-              }
-            }
+        scenario.ondone = function(timelineScenario) {
+          volleyExplosionCount--;
+          if (volleyExplosionCount == 0) {
+             setTimeout("addExplosions()", 40);
           }
-        ]);
+        };
         scenario.play();
       }
     }
