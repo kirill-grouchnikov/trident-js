@@ -818,7 +818,7 @@ function TimelineScenario() {
   this.waitingActors = new Array();
   this.runningActors = new Array();
   this.doneActors = new Array();
-  this.mapping = new Array();
+  var mapping = new Array();
   
   this.dependencies = {};
   this.state = undefined;
@@ -827,14 +827,6 @@ function TimelineScenario() {
   this.id = timelineScenarioId++;
   
   var handlers = new Array();
-  
-  this.actorToId = function(scenarioActor) {
-    return this.mapping.indexOf(scenarioActor);
-  }
-  
-  this.idToActor = function(id) {
-    return this.mapping[id];
-  }
   
   this.__checkDependencyParam = function(scenarioActor) {
     if (this.waitingActors.indexOf(scenarioActor) == -1) {
@@ -862,7 +854,7 @@ function TimelineScenario() {
     for (var i=this.waitingActors.length - 1; i>=0; i--) {
       var waitingActor = this.waitingActors[i];
       var canRun = true;
-      var waitingActorId = this.actorToId(waitingActor);
+      var waitingActorId = mapping.indexOf(waitingActor);
       var toWaitFor = this.dependencies[waitingActorId];
       if (toWaitFor != undefined) {
         for (var j = 0; j < toWaitFor.length; j++) {
@@ -945,15 +937,14 @@ function TimelineScenario() {
   }
   
   this.__playScenario = function() {
-    var readyActors = this.getReadyActors();
-    
     runningScenarios[this.id] = this;
+    var readyActors = this.getReadyActors();
     for (var i = 0; i < readyActors.length; i++) {
       var readyActor = readyActors[i];
       readyActor.play();
     }
   }
-  
+
   this.__callbackCallTimelineScenarioEnded = function() {
     for (var i=0; i<handlers.length; i++) {
       var eventHandler = handlers[i];
@@ -962,131 +953,57 @@ function TimelineScenario() {
       }
     }
   }
-  
+
   this.addEventListener = function(eventName, handler) {
     var eh = new EventHandler(eventName, handler);
     handlers[handlers.length] = eh;
   }
-}
 
-TimelineScenario.prototype.addScenarioActor = function(scenarioActor) {
-  if (scenarioActor.isDone()) {
-    throw "Already finished";
-  }
-  this.waitingActors[this.waitingActors.length] = scenarioActor;
-  this.mapping[this.mapping.length] = scenarioActor;
-}
-
-TimelineScenario.prototype.addDependency = function(actor, waitFor) {
-  // check params
-  this.__checkDependencyParam(actor);
-  for (var i = 0; i < waitFor.length; i++) {
-    var wait = waitFor[i];
-    this.__checkDependencyParam(wait);
+  this.addScenarioActor = function(scenarioActor) {
+    if (scenarioActor.isDone()) {
+      throw "Already finished";
+    }
+    this.waitingActors[this.waitingActors.length] = scenarioActor;
+    mapping[mapping.length] = scenarioActor;
   }
 
-  var actorId = this.actorToId(actor);
-  if (this.dependencies[actorId] == undefined) {
-    this.dependencies[actorId] = new Array();
-  }
-  var deps = this.dependencies[actorId];
-  for (var i = 0; i < waitFor.length; i++) {
-    var wait = waitFor[i];
-    deps[deps.length] = wait;
-  }
-}
+  this.addDependency = function(actor, waitFor) {
+    // check params
+    this.__checkDependencyParam(actor);
+    for (var i = 0; i < waitFor.length; i++) {
+      var wait = waitFor[i];
+      this.__checkDependencyParam(wait);
+    }
 
-TimelineScenario.prototype.play = function() {
-  this.isLooping = false;
-  this.state = TimelineScenarioState.PLAYING;
-  this.__playScenario();
-}
-
-TimelineScenario.prototype.playLoop = function() {
-  for (var i = 0; i < this.waitingActors.length; i++) {
-    var actor = this.waitingActors[i];
-    if (!actor.supportsReplay())
-    throw "Can't loop scenario with actor(s) that don't support replay";
-  }
-  this.isLooping = true;
-  this.state = TimelineScenarioState.PLAYING;
-  this.__playScenario();
-}
-
-ParallelScenario.prototype = new TimelineScenario();
-ParallelScenario.prototype.constructor = ParallelScenario;
-function ParallelScenario() {
-  this.id = timelineScenarioId++;
-}
-ParallelScenario.prototype.addDependency = function(actor, waitFor) {
-  throw "Explicit dependencies not supported";
-}
-
-SequenceScenario.prototype = new TimelineScenario();
-SequenceScenario.prototype.constructor = SequenceScenario;
-function SequenceScenario() {
-  this.id = timelineScenarioId++;
-  this.lastActor = undefined;
-}
-SequenceScenario.prototype.addDependency = function(actor, waitFor) {
-  throw "Explicit dependencies not supported";
-}
-
-SequenceScenario.prototype.addScenarioActor = function(scenarioActor) {
-  TimelineScenario.prototype.addScenarioActor.call(this, scenarioActor);
-  if (this.lastActor != undefined) {
-    TimelineScenario.prototype.addDependency.call(this, scenarioActor, [this.lastActor]);
-  }
-  this.lastActor = scenarioActor;
-}
-
-RendezvousScenario.prototype = new TimelineScenario();
-RendezvousScenario.prototype.constructor = ParallelScenario;
-function RendezvousScenario() {
-  this.id = timelineScenarioId++;
-  this.addedSinceLastRendezvous = new Array();
-  this.addedPriorToLastRendezvous = new Array();
-}
-RendezvousScenario.prototype.addDependency = function(actor, waitFor) {
-  throw "Explicit dependencies not supported";
-}
-
-RendezvousScenario.prototype.addScenarioActor = function(scenarioActor) {
-  TimelineScenario.prototype.addScenarioActor.call(this, scenarioActor);
-  this.addedSinceLastRendezvous[this.addedSinceLastRendezvous.length] = scenarioActor;
-}
-
-RendezvousScenario.prototype.rendezvous = function() {
-  // make all actors added since last rendezvous to wait for
-  // all actors added prior to last rendezvous
-  if (this.addedPriorToLastRendezvous.length > 0) {
-    for (var i=0; i<this.addedSinceLastRendezvous.length; i++) {
-      var sinceLast = this.addedSinceLastRendezvous[i];
-      TimelineScenario.prototype.addDependency.call(this, sinceLast, this.addedPriorToLastRendezvous);
+    var actorId = mapping.indexOf(actor);
+    if (this.dependencies[actorId] == undefined) {
+      this.dependencies[actorId] = new Array();
+    }
+    var deps = this.dependencies[actorId];
+    for (var i = 0; i < waitFor.length; i++) {
+      var wait = waitFor[i];
+      deps[deps.length] = wait;
+  //      alert("Added dependency of " + mapping.indexOf(wait) + " on " + actorId);
     }
   }
 
-  this.addedPriorToLastRendezvous.length = 0;
-  for (var i=0; i<this.addedSinceLastRendezvous.length; i++) {
-    this.addedPriorToLastRendezvous[this.addedPriorToLastRendezvous.length] = 
-      this.addedSinceLastRendezvous[i];
+  this.play = function() {
+    this.isLooping = false;
+    this.state = TimelineScenarioState.PLAYING;
+    this.__playScenario();
   }
-  this.addedSinceLastRendezvous.length = 0;
+
+  this.playLoop = function() {
+    for (var i = 0; i < this.waitingActors.length; i++) {
+      var actor = this.waitingActors[i];
+      if (!actor.supportsReplay())
+      throw "Can't loop scenario with actor(s) that don't support replay";
+    }
+    this.isLooping = true;
+    this.state = TimelineScenarioState.PLAYING;
+    this.__playScenario();
+  }
 }
-
-RendezvousScenario.prototype.play = function() {
-  // add last implicit rendezvous
-  this.rendezvous();
-  TimelineScenario.prototype.play.call(this);
-}
-
-RendezvousScenario.prototype.playLoop = function() {
-  // add last implicit rendezvous
-  this.rendezvous();
-  TimelineScenario.prototype.playLoop.call(this);
-}
-
-
 
 var runningTimelines = {};
 var runningScenarios = {};
@@ -1237,6 +1154,6 @@ globalTimerCallback = function() {
   }
 	
   //  document.title = liveTimelines + " live timeline(s) out of " + totalTimelines;
-  //document.title = liveScenarios + " live scenario(s) out of " + totalScenarios;
+ // document.title = liveScenarios + " live scenario(s) out of " + totalScenarios;
   lastTime = currTime;
 }

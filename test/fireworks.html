@@ -8,6 +8,7 @@
 <body onload="draw();">
   <center><canvas id="explosions" width="400" height="300"></canvas></center><br>
   <center>Frame render time: <span id="renderTime"></span> ms</center><br>
+  <div id="mySpan1"/>
   
   <script>
     var explosions = document.getElementById("explosions");
@@ -36,7 +37,7 @@
       this.circles = new Array();
 
       this.getExplosionScenario = function() {
-        var scenario = new ParallelScenario();
+        var scenario = new TimelineScenario();
 
         var duration = 1000 + randomInt(1000);
         var hsb = rgbToHsb(this.color[0], this.color[1], this.color[2]);

@@ -19,7 +19,7 @@ function parallel() {
     });
   timeline2.duration = 200;
   
-  var scenario = new ParallelScenario();
+  var scenario = new TimelineScenario();
   scenario.addScenarioActor(timeline1);
   scenario.addScenarioActor(timeline2);
   scenario.play();
@@ -40,9 +40,10 @@ function sequential() {
     });
   timeline2.duration = 200;
   
-  var scenario = new SequenceScenario();
+  var scenario = new TimelineScenario();
   scenario.addScenarioActor(timeline1);
   scenario.addScenarioActor(timeline2);
+  scenario.addDependency(timeline2, [timeline1]);
   scenario.play();
 }
 
@@ -68,11 +69,12 @@ function sequentialFan() {
     });
   timeline3.duration = 200;
   
-  var scenario = new RendezvousScenario();
+  var scenario = new TimelineScenario();
   scenario.addScenarioActor(timeline1);
-  scenario.rendezvous();
   scenario.addScenarioActor(timeline2);
   scenario.addScenarioActor(timeline3);
+  scenario.addDependency(timeline2, [timeline1]);
+  scenario.addDependency(timeline3, [timeline1]);
   scenario.play();
 }
 
@@ -105,12 +107,13 @@ function sequentialFan2() {
     });
   timeline4.duration = 200;
   
-  var scenario = new RendezvousScenario();
+  var scenario = new TimelineScenario();
   scenario.addScenarioActor(timeline1);
   scenario.addScenarioActor(timeline2);
-  scenario.rendezvous();
   scenario.addScenarioActor(timeline3);
   scenario.addScenarioActor(timeline4);
+  scenario.addDependency(timeline3, [timeline1, timeline2]);
+  scenario.addDependency(timeline4, [timeline1, timeline2]);
   scenario.play();
 }
 
