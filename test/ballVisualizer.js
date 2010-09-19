@@ -34,14 +34,13 @@ function TimelineVisualizer() {
         goingThrough: { 0: 0, 0.8: 1, 1: 0},
         interpolator: new FloatPropertyInterpolator() }
     ]);
-    dotTimeline.addCallbacks([
-      { onTimelineStateChanged: 
-          function(oldState, newState, durationFraction, timelinePosition) {
-            if (newState == TimelineState.DONE) {
-              deleteDot(dot);
-            }
-      } }
-    ]);
+    dotTimeline.addEventListener("onstatechange", 
+      function(oldState, newState, durationFraction, timelinePosition) {
+        if (newState == TimelineState.DONE) {
+          deleteDot(dot);
+        }
+      }
+    );
     this.dots[dot.id] = dot;
     this.timelines[dot.id] = dotTimeline;
     dotTimeline.duration = 2000;

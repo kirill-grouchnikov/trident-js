@@ -16,12 +16,10 @@ function myclick() {
       goingThrough: { 0: 0, 0.4: 1, 1: 0.2},
       interpolator: new FloatPropertyInterpolator() }
   ]);
-  timeline.addCallbacks([
-    { onTimelinePulse: function(timeline, durationFraction, timelinePosition) {
-        mySpan1.innerHTML += (timelinePosition + ":" + myobj.fvalue + "<br>");
-      } 
-    }
-  ]);
+  timeline.addEventListener("onpulse",
+    function(timeline, durationFraction, timelinePosition) {
+      mySpan1.innerHTML += (timelinePosition + ":" + myobj.fvalue + "<br>");
+    });
   timeline.duration = 500;
   timeline.play();
 }

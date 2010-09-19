@@ -6,20 +6,17 @@
 <script>
 function parallel() {
   var timeline1 = new Timeline();
-  timeline1.addCallbacks([
-    { onTimelinePulse: function(timeline, durationFraction, timelinePosition) {
-        mySpan1.innerHTML += ("Timeline 1: " + timelinePosition + "<br>");
-      } 
-    }
-  ]);
+  timeline1.addEventListener("onpulse",
+    function(timeline, durationFraction, timelinePosition) {
+      mySpan1.innerHTML += ("Timeline 1: " + timelinePosition + "<br>");
+    });
   timeline1.duration = 200;
+
   var timeline2 = new Timeline();
-  timeline2.addCallbacks([
-    { onTimelinePulse: function(timeline, durationFraction, timelinePosition) {
-        mySpan1.innerHTML += ("Timeline 2: " + timelinePosition + "<br>");
-      } 
-    }
-  ]);
+  timeline2.addEventListener("onpulse",
+    function(timeline, durationFraction, timelinePosition) {
+      mySpan1.innerHTML += ("Timeline 2: " + timelinePosition + "<br>");
+    });
   timeline2.duration = 200;
   
   var scenario = new ParallelScenario();
@@ -30,20 +27,17 @@ function parallel() {
 
 function sequential() {
   var timeline1 = new Timeline();
-  timeline1.addCallbacks([
-    { onTimelinePulse: function(timeline, durationFraction, timelinePosition) {
-        mySpan1.innerHTML += ("Timeline 1: " + timelinePosition + "<br>");
-      } 
-    }
-  ]);
+  timeline1.addEventListener("onpulse",
+    function(timeline, durationFraction, timelinePosition) {
+      mySpan1.innerHTML += ("Timeline 1: " + timelinePosition + "<br>");
+    });
   timeline1.duration = 200;
+
   var timeline2 = new Timeline();
-  timeline2.addCallbacks([
-    { onTimelinePulse: function(timeline, durationFraction, timelinePosition) {
-        mySpan1.innerHTML += ("Timeline 2: " + timelinePosition + "<br>");
-      } 
-    }
-  ]);
+  timeline2.addEventListener("onpulse",
+    function(timeline, durationFraction, timelinePosition) {
+      mySpan1.innerHTML += ("Timeline 2: " + timelinePosition + "<br>");
+    });
   timeline2.duration = 200;
   
   var scenario = new SequenceScenario();
@@ -54,28 +48,24 @@ function sequential() {
 
 function sequentialFan() {
   var timeline1 = new Timeline();
-  timeline1.addCallbacks([
-    { onTimelinePulse: function(timeline, durationFraction, timelinePosition) {
-        mySpan1.innerHTML += ("Timeline 1: " + timelinePosition + "<br>");
-      } 
-    }
-  ]);
+  timeline1.addEventListener("onpulse",
+    function(timeline, durationFraction, timelinePosition) {
+      mySpan1.innerHTML += ("Timeline 1: " + timelinePosition + "<br>");
+    });
   timeline1.duration = 200;
+
   var timeline2 = new Timeline();
-  timeline2.addCallbacks([
-    { onTimelinePulse: function(timeline, durationFraction, timelinePosition) {
-        mySpan1.innerHTML += ("Timeline 2: " + timelinePosition + "<br>");
-      } 
-    }
-  ]);
+  timeline2.addEventListener("onpulse",
+    function(timeline, durationFraction, timelinePosition) {
+      mySpan1.innerHTML += ("Timeline 2: " + timelinePosition + "<br>");
+    });
   timeline2.duration = 200;
+
   var timeline3 = new Timeline();
-  timeline3.addCallbacks([
-    { onTimelinePulse: function(timeline, durationFraction, timelinePosition) {
-        mySpan1.innerHTML += ("Timeline 3: " + timelinePosition + "<br>");
-      } 
-    }
-  ]);
+  timeline3.addEventListener("onpulse",
+    function(timeline, durationFraction, timelinePosition) {
+      mySpan1.innerHTML += ("Timeline 3: " + timelinePosition + "<br>");
+    });
   timeline3.duration = 200;
   
   var scenario = new RendezvousScenario();
@@ -88,36 +78,31 @@ function sequentialFan() {
 
 function sequentialFan2() {
   var timeline1 = new Timeline();
-  timeline1.addCallbacks([
-    { onTimelinePulse: function(timeline, durationFraction, timelinePosition) {
-        mySpan1.innerHTML += ("Timeline 1: " + timelinePosition + "<br>");
-      } 
-    }
-  ]);
+  timeline1.addEventListener("onpulse",
+    function(timeline, durationFraction, timelinePosition) {
+      mySpan1.innerHTML += ("Timeline 1: " + timelinePosition + "<br>");
+    });
   timeline1.duration = 200;
+
   var timeline2 = new Timeline();
-  timeline2.addCallbacks([
-    { onTimelinePulse: function(timeline, durationFraction, timelinePosition) {
-        mySpan1.innerHTML += ("Timeline 2: " + timelinePosition + "<br>");
-      } 
-    }
-  ]);
+  timeline2.addEventListener("onpulse",
+    function(timeline, durationFraction, timelinePosition) {
+      mySpan1.innerHTML += ("Timeline 2: " + timelinePosition + "<br>");
+    });
   timeline2.duration = 400;
+
   var timeline3 = new Timeline();
-  timeline3.addCallbacks([
-    { onTimelinePulse: function(timeline, durationFraction, timelinePosition) {
-        mySpan1.innerHTML += ("Timeline 3: " + timelinePosition + "<br>");
-      } 
-    }
-  ]);
+  timeline3.addEventListener("onpulse",
+    function(timeline, durationFraction, timelinePosition) {
+      mySpan1.innerHTML += ("Timeline 3: " + timelinePosition + "<br>");
+    });
   timeline3.duration = 200;
+
   var timeline4 = new Timeline();
-  timeline4.addCallbacks([
-    { onTimelinePulse: function(timeline, durationFraction, timelinePosition) {
-        mySpan1.innerHTML += ("Timeline 4: " + timelinePosition + "<br>");
-      } 
-    }
-  ]);
+  timeline4.addEventListener("onpulse",
+    function(timeline, durationFraction, timelinePosition) {
+      mySpan1.innerHTML += ("Timeline 4: " + timelinePosition + "<br>");
+    });
   timeline4.duration = 200;
   
   var scenario = new RendezvousScenario();

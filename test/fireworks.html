@@ -119,12 +119,12 @@
         volleyExplosionCount++;
         var scenario = exp.getExplosionScenario();
         volleyExplosionScenarios[volleyExplosionScenarios.length] = scenario;
-        scenario.ondone = function(timelineScenario) {
+        scenario.addEventListener("ondone", function(timelineScenario) {
           volleyExplosionCount--;
           if (volleyExplosionCount == 0) {
              setTimeout("addExplosions()", 40);
           }
-        };
+        });
         scenario.play();
       }
     }
@@ -132,12 +132,10 @@
     addExplosions();
     
     var paintLoop = new Timeline();
-    paintLoop.addCallbacks([
-      { onTimelinePulse: function() {
-          draw();
-        }
-      }
-    ]);
+    paintLoop.addEventListener("onpulse", 
+      function() {
+        draw();
+      });
     paintLoop.playInfiniteLoop(RepeatBehavior.LOOP);
     
     function draw() {

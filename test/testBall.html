@@ -93,25 +93,21 @@ function drawVisualizer() {
         " at " + timelinePosition + "<br>");
       draw();
     }
-    timeline.addCallbacks([
-      { onTimelinePulse: drawCallback, onTimelineStateChanged: reportStateChange }
-    ]);
+    timeline.addEventListener("onpulse", drawCallback);
+    timeline.addEventListener("onstatechange", reportStateChange);
+
     var visualizerCallback = function(timeline, durationFraction, timelinePosition) {
       visualizer.addDot(durationFraction, timelinePosition);
     }
-    timeline.addCallbacks([
-      { onTimelinePulse: visualizerCallback }
-    ]);
+    timeline.addEventListener("onpulse", visualizerCallback);
     timeline.duration = 2000;
     timeline.initialDelay = 0;
 
     var visualizerRepaintTimeline = new Timeline();
-    visualizerRepaintTimeline.addCallbacks([
-      { onTimelinePulse: function(timeline, durationFraction, timelinePosition) {
-          drawVisualizer();
-        }
-      }
-    ]);
+    visualizerRepaintTimeline.addEventListener("onpulse", 
+      function(timeline, durationFraction, timelinePosition) {
+        drawVisualizer();
+      });
     visualizerRepaintTimeline.playInfiniteLoop(RepeatBehavior.REVERSE);
 
     function play() {

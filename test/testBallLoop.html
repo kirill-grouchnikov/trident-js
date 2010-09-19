@@ -69,17 +69,14 @@ function run() {
       " at " + timelinePosition + "<br>");
     draw();
   }
-  timelineBallFalling.addCallbacks([
-    { onTimelinePulse: drawCallback, onTimelineStateChanged: reportStateChange }
-  ]);
-  
+  timelineBallFalling.addEventListener("onpulse", drawCallback);
+  timelineBallFalling.addEventListener("onstatechange", reportStateChange);
+
   var visualizerCallback = function(timeline, durationFraction, timelinePosition) {
     visualizer.addDot(durationFraction, timelinePosition);
   }
-  timelineBallFalling.addCallbacks([
-    { onTimelinePulse: visualizerCallback }
-  ]);
-  
+  timelineBallFalling.addEventListener("onpulse", visualizerCallback);
+
   timelineBallFalling.duration = 2000;
   timelineBallFalling.initialDelay = document.getElementById("initialDelay").value;
   timelineBallFalling.cycleDelay = document.getElementById("cycleDelay").value;
@@ -161,12 +158,11 @@ function resume() {
     var visualizer = new TimelineVisualizer();
 
     var visualizerRepaintTimeline = new Timeline();
-    visualizerRepaintTimeline.addCallbacks([
-      { onTimelinePulse: function(timeline, durationFraction, timelinePosition) {
-          drawVisualizer();
-        }
+    visualizerRepaintTimeline.addEventListener("onpulse", 
+      function(timeline, durationFraction, timelinePosition) {
+        drawVisualizer();
       }
-    ]);
+    );
     visualizerRepaintTimeline.playInfiniteLoop(RepeatBehavior.REVERSE);
 
   </script>

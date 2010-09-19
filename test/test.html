@@ -14,10 +14,8 @@ function myclick(duration, span) {
     var redHex = parseInt(parseFloat(255*timelinePosition)).toString(16);
     span.style.color = "#" + redHex + "0000";
   }
-  timeline.addCallbacks([
-    { onTimelinePulse: spanCallback },
-    { onTimelinePulse: spanColorCallback }
-  ]);
+  timeline.addEventListener("onpulse", spanCallback);
+  timeline.addEventListener("onpulse", spanColorCallback);
   timeline.play();
 }
 

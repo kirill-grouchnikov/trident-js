@@ -51,12 +51,10 @@
             goingThrough: { 0: 0.0, 0.3: 1.0, 0.7:1.0, 1: 0.0}, 
             interpolator: new FloatPropertyInterpolator()}
       ]);
-      progressTimeline.addCallbacks([
-        { onTimelinePulse: function(timeline, durationFraction, timelinePosition) {
-            draw();
-          }
-        }
-      ]);
+      progressTimeline.addEventListener("onpulse", 
+        function(timeline, durationFraction, timelinePosition) {
+          draw();
+        });
       progressTimeline.duration = 1500;
       progressTimeline.playInfiniteLoop(RepeatBehavior.LOOP);
 

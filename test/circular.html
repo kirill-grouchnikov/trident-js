@@ -51,16 +51,14 @@
     
     var paintLoop = new Timeline();
     var currHue = 0.84;
-    paintLoop.addCallbacks([
-      { onTimelinePulse: function() {
-          draw();
-          currHue += 0.005;
-          if (currHue > 1.0) {
-            currHue = 0.0;
-          }
+    paintLoop.addEventListener("onpulse", 
+      function() {
+        draw();
+        currHue += 0.005;
+        if (currHue > 1.0) {
+          currHue = 0.0;
         }
-      }
-    ]);
+      });
     paintLoop.playInfiniteLoop(RepeatBehavior.LOOP);
     
     function makeParticle(isInitial) {
@@ -96,16 +94,14 @@
           goingThrough: { 0: 0.0, 0.5: 1.0, 1: 0.0}, 
           interpolator: new FloatPropertyInterpolator()}
       ]);
-      timeline.addCallbacks([
-        { onTimelineStateChanged: function(timeline, oldState, newState, durationFraction, timelinePosition) {
-            if (newState == TimelineState.DONE) {
-              delete particleMap[timeline.getMainObject().id];
-              // one dies, one is born
-              makeParticle(false);
-            }
+      timeline.addEventListener("onstatechange",
+        function(timeline, oldState, newState, durationFraction, timelinePosition) {
+          if (newState == TimelineState.DONE) {
+            delete particleMap[timeline.getMainObject().id];
+            // one dies, one is born
+            makeParticle(false);
           }
-        }
-      ]);
+        });
       timeline.duration = duration;
       if (isInitial) {
         // start in a quasi-random state

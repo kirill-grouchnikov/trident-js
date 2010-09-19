@@ -126,22 +126,20 @@
     var particleMap = {};
 
     var particleCreator = new Timeline();
-    particleCreator.addCallbacks([
-      { onTimelinePulse: function() {
-          if (mousePointerX != undefined && mousePointerY != undefined &&
-            lastMousePointerX != undefined && lastMousePointerY != undefined) {
-            var dx = lastMousePointerX - mousePointerX;
-            var dy = lastMousePointerY - mousePointerY;
-            var dist = Math.sqrt(dx * dx + dy * dy);
-            makeParticles(lastMousePointerX, lastMousePointerY, mousePointerX, mousePointerY,
-              parseInt(1 + dist / 16));
-          }
-          lastMousePointerX = mousePointerX;
-          lastMousePointerY = mousePointerY;
-          draw();
+    particleCreator.addEventListener("onpulse", 
+      function() {
+        if (mousePointerX != undefined && mousePointerY != undefined &&
+          lastMousePointerX != undefined && lastMousePointerY != undefined) {
+          var dx = lastMousePointerX - mousePointerX;
+          var dy = lastMousePointerY - mousePointerY;
+          var dist = Math.sqrt(dx * dx + dy * dy);
+          makeParticles(lastMousePointerX, lastMousePointerY, mousePointerX, mousePointerY,
+            parseInt(1 + dist / 16));
         }
-      }
-    ]);
+        lastMousePointerX = mousePointerX;
+        lastMousePointerY = mousePointerY;
+        draw();
+      });
     particleCreator.playInfiniteLoop(RepeatBehavior.LOOP);
     
     function randomInt(max) {
@@ -177,14 +175,12 @@
             interpolator: new FloatPropertyInterpolator()},
           { property: "angle", from: startAngle, to: endAngle, interpolator: new FloatPropertyInterpolator()}
         ]);
-        timeline.addCallbacks([
-          { onTimelineStateChanged: function(timeline, oldState, newState, durationFraction, timelinePosition) {
-              if (newState == TimelineState.DONE) {
-                delete particleMap[timeline.getMainObject().id];
-              }
+        timeline.addEventListener("onstatechange", 
+          function(timeline, oldState, newState, durationFraction, timelinePosition) {
+            if (newState == TimelineState.DONE) {
+              delete particleMap[timeline.getMainObject().id];
             }
-          }
-        ]);
+          });
         timeline.duration = duration;
         timeline.play();
       }

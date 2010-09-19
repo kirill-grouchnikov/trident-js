@@ -405,9 +405,9 @@ function KeyFramesPropertyInfo(mainObject, field, timeValueMap, propertyInterpol
   }
 }
 
-function TimelineCallback(callbackDef) {
-  this.onTimelineStateChanged = callbackDef["onTimelineStateChanged"];
-  this.onTimelinePulse = callbackDef["onTimelinePulse"];
+function EventHandler(eventName, handler) {
+  this.eventName = eventName;
+  this.handler = handler;
 }
 
 function Stack() {
@@ -451,7 +451,7 @@ function Timeline(mainObject) {
   this.doneCount = 0;
 
   var mainObject = mainObject;
-  var callbacks = new Array;
+  var handlers = new Array;
   var properties = new Array;
   var stateStack = new Stack();
   var id = timelineId++;
@@ -473,15 +473,6 @@ function Timeline(mainObject) {
   var addProperty = function(property) {
     var currProperties = getProperties();
     currProperties[currProperties.length] = property;
-  }
-
-  var getCallbacks = function() {
-    return callbacks;
-  }
-
-  var addCallback = function(callback) {
-    var currCallbacks = getCallbacks();
-    currCallbacks[currCallbacks.length] = callback;
   }
 
   this.addPropertyToInterpolate = function(field, from, to, interpolator) {
@@ -508,12 +499,9 @@ function Timeline(mainObject) {
     }
   }
 
-  this.addCallbacks = function(callbacks) {
-    for (var i=0; i<callbacks.length; i++) {
-      var callbackDefinition = callbacks[i];
-      var callbackInfo = new TimelineCallback(callbackDefinition);
-      addCallback(callbackInfo);
-    }
+  this.addEventListener = function(eventName, handler) {
+    var eh = new EventHandler(eventName, handler);
+    handlers[handlers.length] = eh;
   }
 
   this.getState = function() {
@@ -788,7 +776,7 @@ function Timeline(mainObject) {
     }
     var oldState = this.getState();
     if (oldState != TimelineState.SUSPENDED) {
-    return;
+      return;
     }
     this.__popState();
     this.__callbackCallTimelineStateChanged(oldState);
@@ -797,11 +785,10 @@ function Timeline(mainObject) {
   this.__callbackCallTimelinePulse = function() {
     this.timelinePosition = this.ease.map(this.durationFraction);
 
-    var callbacks = getCallbacks();
-    for (var i=0; i<callbacks.length; i++) {
-      var callbackOnPulse = callbacks[i].onTimelinePulse;
-      if (callbackOnPulse != undefined) {
-        callbackOnPulse(this, this.durationFraction, this.timelinePosition);
+    for (var i=0; i<handlers.length; i++) {
+      var eventHandler = handlers[i];
+      if (eventHandler.eventName == "onpulse") {
+        eventHandler.handler(this, this.durationFraction, this.timelinePosition);
       }
     }
     var properties = getProperties();
@@ -813,11 +800,10 @@ function Timeline(mainObject) {
   this.__callbackCallTimelineStateChanged = function(oldState) {
     var currState = this.getState();
     this.timelinePosition = this.ease.map(this.durationFraction);
-    var callbacks = getCallbacks();
-    for (var i=0; i<callbacks.length; i++) {
-      var callbackOnStateChanged = callbacks[i].onTimelineStateChanged;
-      if (callbackOnStateChanged != undefined) {
-        callbackOnStateChanged(this, oldState, this.getState(), 
+    for (var i=0; i<handlers.length; i++) {
+      var eventHandler = handlers[i];
+      if (eventHandler.eventName == "onstatechange") {
+        eventHandler.handler(this, oldState, this.getState(), 
           this.durationFraction, this.timelinePosition);
       }
     }
@@ -839,6 +825,8 @@ function TimelineScenario() {
   this.statePriorToSuspension = undefined;
   this.isLooping = false;
   this.id = timelineScenarioId++;
+  
+  var handlers = new Array();
   
   this.actorToId = function(scenarioActor) {
     return this.mapping.indexOf(scenarioActor);
@@ -967,9 +955,17 @@ function TimelineScenario() {
   }
   
   this.__callbackCallTimelineScenarioEnded = function() {
-    if (this.ondone != undefined) {
-      this.ondone(this);
+    for (var i=0; i<handlers.length; i++) {
+      var eventHandler = handlers[i];
+      if (eventHandler.eventName == "ondone") {
+        eventHandler.handler(this);
+      }
     }
+  }
+  
+  this.addEventListener = function(eventName, handler) {
+    var eh = new EventHandler(eventName, handler);
+    handlers[handlers.length] = eh;
   }
 }
 
