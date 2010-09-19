@@ -1008,7 +1008,12 @@ function TimelineScenario() {
 var runningTimelines = {};
 var runningScenarios = {};
 
-setInterval("globalTimerCallback()", 40);
+var timerCallbackId = setInterval("globalTimerCallback()", 40);
+
+setPulseRate = function(pulseMsDelay) {
+  clearInterval(timerCallbackId);
+  timerCallbackId = setInterval("globalTimerCallback()", 20);
+}
 
 globalTimerCallback = function() {
   var currTime = new Date().getTime();

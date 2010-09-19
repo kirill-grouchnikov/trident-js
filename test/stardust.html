@@ -1,0 +1,159 @@
+<html>
+
+<head>
+  <script type='text/javascript' src='../trident.js'></script>
+  <script type='text/javascript' src='utils.js'></script>
+
+</head>
+
+<body onload="draw();">
+  <center><canvas id="starCanvas" width="600" height="400"></canvas></center><br>
+  <center>Star count: <span id="starCount"></span></center><br>
+  <center>Frame render time: <span id="renderTime"></span> ms</center><br>
+  <div id="stateTracking"/>
+
+  <script>
+    var starCanvas = document.getElementById("starCanvas");
+    starCanvas.addEventListener('mouseout', mouseout, false);
+    starCanvas.addEventListener('mousemove', mousemove, false);
+    
+    var mousePointerX = undefined;
+    var mousePointerY = undefined;
+    
+    function mouseout(e) {
+      mousePointerX = undefined;
+      mousePointerY = undefined;
+    }
+  
+    function mousemove(e) {
+      var x;
+      var y;
+      if (e.pageX || e.pageY) {
+        x = e.pageX;
+        y = e.pageY;
+      }
+      else {
+        x = e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
+        y = e.clientY + document.body.scrollTop + document.documentElement.scrollTop;
+      }
+      x -= starCanvas.offsetLeft;
+      y -= starCanvas.offsetTop;
+      mousePointerX = x;
+      mousePointerY = y;
+    }
+    
+    function Star(x, y, outerSpan) {
+      this.x = x;
+      this.y = y;
+      this.alpha = 1.0;
+      this.outerSpan = outerSpan;
+      this.color = "rgb(255,255,255)";
+      this.rotation = 0.0;
+
+      this.getShape = function(ctx) {
+        ctx.beginPath();
+        var innerSpan = this.outerSpan * (0.1 + 0.1 * outerSpan / 20);
+        var POINTS = 5;
+        for (var i = 0; i < POINTS; i++) {
+          var outerAngle = this.rotation + i * 2 * Math.PI / POINTS;
+          var xOuter = this.x + this.outerSpan * Math.cos(outerAngle);
+          var yOuter = this.y + this.outerSpan * Math.sin(outerAngle);
+          if (i == 0) {
+            ctx.moveTo(xOuter, yOuter);
+          } else {
+            ctx.lineTo(xOuter, yOuter);
+          }
+          var innerAngle = outerAngle + Math.PI / POINTS;
+          var xInner = this.x + innerSpan * Math.cos(innerAngle);
+          var yInner = this.y + innerSpan * Math.sin(innerAngle);
+          ctx.lineTo(xInner, yInner);
+        }
+        ctx.closePath();
+      }
+    }
+    
+    var stars = new Array();
+    setPulseRate(20);
+
+    var currHue = 0.0;
+    var spawner = new Timeline();
+    spawner.addEventListener("onpulse", 
+      function(timeline, durationFraction, timelinePosition) {
+        if (mousePointerX == undefined || mousePointerY == undefined) {
+          draw();
+          return;
+        }
+        
+        var outerStartSpan = 5;
+        var outerFinalSpan = 20;
+        var star = new Star(mousePointerX, mousePointerY, outerStartSpan);
+        document.getElementById("stateTracking").innerHtml += 
+          (mousePointerX + ":" + mousePointerY + ":" + outerStartSpan + "<br>");
+        stars[stars.length] = star;
+        
+        var starTimeline = new Timeline(star);
+        var angle = Math.random() * 2.0 * Math.PI;
+        var distance = 20.0 + 30.0 * Math.random();
+        starTimeline.addPropertiesToInterpolate([
+          { property: "x", from: mousePointerX, to: mousePointerX + distance * Math.cos(angle), 
+            interpolator: new FloatPropertyInterpolator()},
+          { property: "y", from: mousePointerY, to: mousePointerY + distance * Math.sin(angle), 
+            interpolator: new FloatPropertyInterpolator()},
+          { property: "alpha", 
+            goingThrough: { 0: 0.6, 0.2: 1.0, 1: 0.0}, 
+            interpolator: new FloatPropertyInterpolator()},
+          { property: "rotation", from: 0.0, to: 2 * Math.PI * Math.random(), 
+            interpolator: new FloatPropertyInterpolator()},
+          { property: "outerSpan", from: outerStartSpan, to: outerFinalSpan, 
+            interpolator: new FloatPropertyInterpolator()},
+          { property: "color", from: "rgb(255,255,255)", to: hsbToRgb(currHue, 0.8, 0.7), 
+            interpolator: new RGBPropertyInterpolator()}
+        ]);
+        starTimeline.addEventListener("onstatechange", 
+          function(timeline, oldState, newState, durationFraction, timelinePosition) {
+            if (newState == TimelineState.DONE) {
+              // should be the last one in the list
+              stars.splice(0, 1);
+            }
+          });
+        
+        starTimeline.duration = 3000;;
+        starTimeline.play();
+        currHue += 0.01;
+        if (currHue > 1.0) {
+          currHue -= 1.0;
+        }
+        
+        draw();
+      });
+
+    spawner.playInfiniteLoop(RepeatBehavior.LOOP);
+
+    function draw() {
+      var start = new Date().getTime();
+      var canvas = document.getElementById("starCanvas");
+      if (canvas.getContext) {
+        var ctx = canvas.getContext("2d");
+      
+        var w = canvas.width;
+        var h = canvas.height;
+        ctx.globalCompositeOperation = "source-over";
+        ctx.fillStyle = "rgb(0,0,0)";
+        ctx.fillRect(0,0,w,h);
+        
+        for (var i=0; i<stars.length; i++) {
+          var star = stars[i];
+          var color = parseColor(star.color);
+          ctx.fillStyle = "rgba(" + color[0] + ", " + color[1] + ", " + color[2] + ", " + star.alpha + ")";
+          star.getShape(ctx);
+          ctx.fill();
+        }
+        var end = new Date().getTime();
+        document.getElementById("starCount").innerHTML = stars.length;
+        document.getElementById("renderTime").innerHTML = end - start;
+      }
+    }
+  </script>
+</body>
+
+</html>
