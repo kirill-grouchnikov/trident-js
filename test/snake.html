@@ -1,0 +1,120 @@
+<html>
+
+<head>
+  <script type='text/javascript' src='../trident.js'></script>
+  <script type='text/javascript' src='utils.js'></script>
+
+</head>
+
+<body onload="draw();">
+  <center><canvas id="snakeCanvas" width="420" height="315"></canvas></center><br>
+  <center>Frame render time: <span id="renderTime"></span> ms</center><br>
+
+  <script>
+    var snakeCanvas = document.getElementById("snakeCanvas");
+    snakeCanvas.addEventListener('mousemove', mousemove, false);
+    
+    var grid;
+    var DIM = 20;
+
+    var prevMouseColumn = -1;
+    var prevMouseRow = -1;
+
+    function mousemove(e) {
+      var x;
+      var y;
+      if (e.pageX || e.pageY) {
+        x = e.pageX;
+        y = e.pageY;
+      }
+      else {
+        x = e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
+        y = e.clientY + document.body.scrollTop + document.documentElement.scrollTop;
+      }
+      x -= snakeCanvas.offsetLeft;
+      y -= snakeCanvas.offsetTop;
+
+      var column = parseInt(parseFloat(x / (DIM + 1)));
+      var row = parseInt(parseFloat(y / (DIM + 1)));
+      if ((column != prevMouseColumn) || (row != prevMouseRow)) {
+        if ((prevMouseColumn >= 0) && (prevMouseRow >= 0)) {
+          // mark the prev cell as non-rollover (if necessary)
+          grid[prevMouseColumn][prevMouseRow].setRollover(false);
+        }
+        // and the current cell as rollover (if necessary)
+        grid[column][row].setRollover(true);
+      }
+      prevMouseColumn = column;
+      prevMouseRow = row;
+    }
+
+    function SnakeRectangle() {
+      this.backgroundColor = "rgb(0,0,0)";
+      this.isRollover = false;
+
+      // rollover timeline interpolates the BG color from yellow to black
+      this.rolloverTimeline = new Timeline(this);
+      this.rolloverTimeline.addPropertiesToInterpolate([
+        { property: "backgroundColor", from: "rgb(255,255,0)", to: "rgb(0,0,0)", 
+          interpolator: new RGBPropertyInterpolator()} ]);
+      this.rolloverTimeline.duration = 2500;
+
+      this.setRollover = function(isRollover) {
+        if (this.isRollover == isRollover) {
+          return;
+        }
+        this.isRollover = isRollover;
+        // replay the rollover timeline when the flag is set to true
+        if (this.isRollover) {
+          this.rolloverTimeline.replay();
+        }
+      }
+    }
+
+    // create and initialize the grid
+    var ROWS = 15;
+    var COLUMNS = 20;
+    
+    grid = new Array(COLUMNS);
+    for (var i=0; i<COLUMNS; i++) {
+      var row = new Array(ROWS);
+      for (var j=0; j<ROWS; j++) {
+        var cell = new SnakeRectangle();
+        row[j] = cell; 
+      }
+      grid[i] = row;
+    }
+
+    // global repaint timeline
+    var repaintTimeline = new Timeline();
+    // this is not the cleanest, but works
+    repaintTimeline.addEventListener("onpulse", draw);
+    repaintTimeline.playInfiniteLoop(RepeatBehavior.LOOP);
+
+    function draw() {
+      var start = new Date().getTime();
+      var canvas = document.getElementById("snakeCanvas");
+      if (canvas.getContext) {
+        var ctx = canvas.getContext("2d");
+      
+        var w = canvas.width;
+        var h = canvas.height;
+        ctx.globalCompositeOperation = "source-over";
+        ctx.fillStyle = "rgb(0,0,0)";
+        ctx.fillRect(0,0,w,h);
+        
+        for (var i = 0; i < COLUMNS; i++) {
+          for (var j = 0; j < ROWS; j++) {
+            var rect = grid[i][j];
+            ctx.fillStyle = rect.backgroundColor;
+            ctx.fillRect(i * (DIM + 1), j * (DIM + 1), DIM, DIM);
+          }
+        }
+        var end = new Date().getTime();
+        document.getElementById("renderTime").innerHTML = end - start;
+      }
+    }
+  </script>
+</body>
+
+</html>
