@@ -1,0 +1,169 @@
+<html>
+
+<head>
+  <script type='text/javascript' src='../trident.js'></script>
+  <script type='text/javascript' src='utils.js'></script>
+
+</head>
+
+<body onload="draw();">
+  <center><canvas id="shapesCanvas" width="420" height="315"></canvas></center><br>
+  <center>Frame render time: <span id="renderTime"></span> ms</center><br>
+
+  <script>
+    var shapesCanvas = document.getElementById("shapesCanvas");
+    if (isMobile()) {
+      shapesCanvas.addEventListener('touchstart', handleclick, false);
+    } else {
+      shapesCanvas.addEventListener('mousedown', handleclick, false);
+    }
+
+    var shapes = new Array();
+    var toAddSquare = true;
+
+    function handleclick(e) {
+      var x;
+      var y;
+      if (e.pageX || e.pageY) {
+        x = e.pageX;
+        y = e.pageY;
+      }
+      else {
+        x = e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
+        y = e.clientY + document.body.scrollTop + document.documentElement.scrollTop;
+      }
+      x -= shapesCanvas.offsetLeft;
+      y -= shapesCanvas.offsetTop;
+      
+      if (toAddSquare) {
+        var square = new Square(x, y, 0, 0);
+        shapes[shapes.length] = square;
+        var timelineSquare = new Timeline(square);
+        timelineSquare.addPropertiesToInterpolate([
+          { property: "x", from: x, to: x - 100, 
+            interpolator: new IntPropertyInterpolator()},
+          { property: "y", from: y, to: y - 100, 
+            interpolator: new IntPropertyInterpolator()},
+          { property: "side", from: 0, to: 200, 
+            interpolator: new IntPropertyInterpolator()},
+          { property: "rotation", from: 0, to: 180, 
+            interpolator: new FloatPropertyInterpolator()},
+          { property: "alpha", from: 1.0, to: 0.0, 
+            interpolator: new FloatPropertyInterpolator()},
+        ]);
+        timelineSquare.addEventListener("onstatechange", 
+          function(timeline, oldState, newState, durationFraction, timelinePosition) {
+            if (newState == TimelineState.DONE) {
+              // should be the first one in the list
+              shapes.splice(0, 1);
+            }
+          });
+        timelineSquare.duration = 1000;
+        timelineSquare.play();
+      } else {
+        var circle = new Circle(x, y, 0, 0);
+        shapes[shapes.length] = circle;
+        var timelineCircle = new Timeline(circle);
+        timelineCircle.addPropertiesToInterpolate([
+          { property: "radius", from: 0, to: 100, 
+            interpolator: new IntPropertyInterpolator()},
+          { property: "alpha", from: 1.0, to: 0.0, 
+            interpolator: new FloatPropertyInterpolator()},
+        ]);
+        timelineCircle.addEventListener("onstatechange", 
+          function(timeline, oldState, newState, durationFraction, timelinePosition) {
+            if (newState == TimelineState.DONE) {
+              // should be the first one in the list
+              shapes.splice(0, 1);
+            }
+          });
+        timelineCircle.duration = 1000;
+        timelineCircle.play();
+      }
+      toAddSquare = !toAddSquare;
+    }
+
+    var COLOR_BLUE = "rgb(128, 128, 255)";
+    var COLOR_GREEN = "rgb(128, 255, 128)";
+
+    function Square(x, y, side) {
+      this.x = x;
+      this.y = y;
+      this.side = side;
+      this.alpha = 1.0;
+      this.rotation = 0.0;
+
+      this.draw = function(ctx) {
+        var color = parseColor(COLOR_GREEN);
+        ctx.fillStyle = "rgba(" + color[0] + ", " + color[1] + ", " + color[2] + ", " + this.alpha + ")";
+        ctx.save();
+        ctx.translate(this.x + this.side / 2, this.y + this.side / 2);
+        ctx.rotate(this.rotation * Math.PI / 180.0);
+        ctx.fillRect(-this.side/2, -this.side/2, this.side, this.side);
+        ctx.restore();
+      }
+    }
+
+    function Circle(x, y, radius) {
+      this.x = x;
+      this.y = y;
+      this.radius = radius;
+      this.alpha = 1.0;
+
+      this.draw = function(ctx) {
+        var color = parseColor(COLOR_GREEN);
+        ctx.fillStyle = "rgba(" + color[0] + ", " + color[1] + ", " + color[2] + ", " + this.alpha + ")";
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, 360, 0);
+        ctx.fill();
+      }
+    }
+
+    function BackgroundLayer() {
+      this.topColor = COLOR_BLUE;
+      this.bottomColor = COLOR_GREEN;
+    }
+
+    var backgroundLayer = new BackgroundLayer();
+    
+    // global color timeline
+    var colorTimeline = new Timeline(backgroundLayer);
+    colorTimeline.addPropertiesToInterpolate([
+      { property: "topColor", from: COLOR_BLUE, to: COLOR_GREEN, 
+        interpolator: new RGBPropertyInterpolator()},
+      { property: "bottomColor", from: COLOR_GREEN, to: COLOR_BLUE, 
+        interpolator: new RGBPropertyInterpolator()},
+    ]);
+    colorTimeline.duration = 1000;
+    // this is not the cleanest, but works
+    colorTimeline.addEventListener("onpulse", draw);
+    colorTimeline.playInfiniteLoop(RepeatBehavior.REVERSE);
+
+    function draw() {
+      var start = new Date().getTime();
+      var canvas = document.getElementById("shapesCanvas");
+      if (canvas.getContext) {
+        var ctx = canvas.getContext("2d");
+      
+        var w = canvas.width;
+        var h = canvas.height;
+        ctx.globalCompositeOperation = "source-over";
+
+        var fillgrad = ctx.createLinearGradient(0, 0, 0, h);
+        fillgrad.addColorStop(0, backgroundLayer.topColor);
+        fillgrad.addColorStop(1, backgroundLayer.bottomColor);
+        ctx.fillStyle = fillgrad;
+        ctx.fillRect(0,0,w,h);
+        
+        for (var i=0; i<shapes.length; i++) {
+          shapes[i].draw(ctx);
+        }
+
+        var end = new Date().getTime();
+        document.getElementById("renderTime").innerHTML = end - start;
+      }
+    }
+  </script>
+</body>
+
+</html>

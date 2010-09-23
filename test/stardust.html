@@ -111,7 +111,7 @@
         starTimeline.addEventListener("onstatechange", 
           function(timeline, oldState, newState, durationFraction, timelinePosition) {
             if (newState == TimelineState.DONE) {
-              // should be the last one in the list
+              // should be the first one in the list
               stars.splice(0, 1);
             }
           });
