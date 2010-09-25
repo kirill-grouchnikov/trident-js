@@ -1,0 +1,269 @@
+<html>
+
+<head>
+  <script type='text/javascript' src='../trident.js'></script>
+  <script type='text/javascript' src='utils.js'></script>
+</head>
+
+<body onload="draw();">
+  <center><canvas id="cropCircles" width="600" height="400"></canvas></center><br>
+  <center>Frame render time: <span id="renderTime"></span> ms</center><br>
+  
+  <script>
+
+  function CropCircle(xc, yc, targetRadius) {
+    this.xc = xc;
+    this.yc = yc;
+    this.radius = 0.0;
+    this.targetRadius = targetRadius;
+    this.alpha = 0.0;
+
+    this.draw = function(ctx) {
+      if (this.alpha == 0.0) {
+        return;
+      }
+
+      ctx.fillStyle = "rgba(241, 237, 190, " + this.alpha + ")";
+      ctx.beginPath();
+      ctx.arc(this.xc, this.yc, this.radius, 0, 360, 0);
+      ctx.fill();
+    }
+  }
+
+  function CropArc(x1, y1, x2, y2, x3, y3) {
+    var ma = (y2 - y1) / (x2 - x1);
+    var mb = (y3 - y2) / (x3 - x2);
+    this.xc = (ma * mb * (y1 - y3) + mb * (x1 + x2) - ma * (x2 + x3)) / (2 * (mb - ma));
+    if (ma == 0.0) {
+      this.yc = (y2 + y3) / 2 - (this.xc - (x2 + x3) / 2) / mb;
+    } else {
+      this.yc = (y1 + y2) / 2 - (this.xc - (x1 + x2) / 2) / ma;
+    }
+    this.radius = Math.sqrt((x1 - this.xc) * (x1 - this.xc) + (y1 - this.yc) * (y1 - this.yc));
+    this.cropCircles = new Array();
+
+    this.populate = function(startAngle, startRadius, factor) {
+      var currRad = startRadius;
+      var currAngle = startAngle;
+      while (currRad > 2) {
+        var b = Math.abs(Math.acos(1.0 - currRad * currRad / (2 * this.radius * this.radius)));
+        currRad *= factor;
+        var g = Math.abs(Math.acos(1.0 - currRad * currRad / (2 * this.radius * this.radius)));
+        currAngle -= (b + g);
+        var cropCircle = new CropCircle(
+          this.xc + this.radius * Math.cos(currAngle), 
+          this.yc - this.radius * Math.sin(currAngle), currRad);
+        this.cropCircles[this.cropCircles.length] = cropCircle;
+      }
+    }
+
+    this.draw = function(ctx) {
+      for (var i = 0; i < this.cropCircles.length; i++) {
+        this.cropCircles[i].draw(ctx);
+      }
+    }
+
+    this.setAlpha = function(alpha) {
+      for (var i = 0; i < this.cropCircles.length; i++) {
+        this.cropCircles[i].alpha = alpha;
+      }
+    }
+  }
+  
+  function CropPlantation() {
+    var xc = 300;
+    var yc = 200;
+    var rad = 80;
+
+    var x1 = xc;
+    var y1 = yc - rad * Math.sin(-Math.PI / 2);
+
+    var x2 = xc + rad * Math.cos(5 * Math.PI / 6);
+    var y2 = yc - rad * Math.sin(5 * Math.PI / 6);
+
+    var x3 = xc + rad * Math.cos(Math.PI / 6);
+    var y3 = yc - rad * Math.sin(Math.PI / 6);
+
+    this.arc1 = new CropArc(xc, yc, x2, y2, x3, y3);
+    this.arc2 = new CropArc(xc, yc, x2, y2, x1, y1);
+    this.arc3 = new CropArc(xc, yc, x3, y3, x1, y1);
+
+    var startRadius = 46;
+    var factor = 0.79;
+    this.arc1.populate(-Math.PI / 2, startRadius, factor);
+    this.arc2.populate(Math.PI / 6, startRadius, factor);
+    this.arc3.populate(5 * Math.PI / 6, startRadius, factor);
+    
+    this.center = new CropCircle(xc, yc, startRadius - 2);
+
+    var smallRadius = 15;
+    this.center1 = new CropCircle(this.arc1.xc, this.arc1.yc, smallRadius);
+    this.center1.radius = smallRadius;
+    this.center2 = new CropCircle(this.arc2.xc, this.arc2.yc, smallRadius);
+    this.center2.radius = smallRadius;
+    this.center3 = new CropCircle(this.arc3.xc, this.arc3.yc, smallRadius);
+    this.center3.radius = smallRadius;
+    var pulseCenters = new Timeline();
+    pulseCenters.addPropertiesToInterpolate([
+      { property: "alpha", on: this.center1, from: 0.0, to: 1.0, 
+        interpolator: new FloatPropertyInterpolator()},
+      { property: "alpha", on: this.center2, from: 0.0, to: 1.0, 
+        interpolator: new FloatPropertyInterpolator()},
+      { property: "alpha", on: this.center3, from: 0.0, to: 1.0, 
+        interpolator: new FloatPropertyInterpolator()},
+    ]);
+    pulseCenters.duration = 750;
+    pulseCenters.ease = new SplineEase(0.9, 0.0, 0.1, 1.0);
+    pulseCenters.playInfiniteLoop(RepeatBehavior.REVERSE);
+
+    this.rotation = 0.0;
+
+    var that = this;
+
+    this.getScenario = function() {
+      var showScenario = new TimelineScenario();
+      var circles1 = this.arc1.cropCircles;
+      var circles2 = this.arc2.cropCircles;
+      var circles3 = this.arc3.cropCircles;
+      var count = circles1.length;
+      
+      var prevStage = [];
+      var currStage = [];
+
+      for (var i = count - 1; i >= 0; i--) {
+        var duration = 200 + (count - i) * 70;
+
+        var c1 = circles1[i];
+        var t1 = new Timeline(c1);
+        t1.addPropertiesToInterpolate([
+          { property: "alpha", from: 0.0, to: 1.0, 
+            interpolator: new FloatPropertyInterpolator()},
+          { property: "radius", from: 0.0, to: c1.targetRadius, 
+            interpolator: new FloatPropertyInterpolator()},
+        ]);
+        t1.duration = duration;
+        t1.ease = new SplineEase(0.9, 0.0, 0.1, 1.0);
+
+        var c2 = circles2[i];
+        var t2 = new Timeline(c2);
+        t2.addPropertiesToInterpolate([
+          { property: "alpha", from: 0.0, to: 1.0, 
+            interpolator: new FloatPropertyInterpolator()},
+          { property: "radius", from: 0.0, to: c2.targetRadius, 
+            interpolator: new FloatPropertyInterpolator()},
+        ]);
+        t2.duration = duration;
+        t2.ease = new SplineEase(0.9, 0.0, 0.1, 1.0);
+
+        var c3 = circles3[i];
+        var t3 = new Timeline(c3);
+        t3.addPropertiesToInterpolate([
+          { property: "alpha", from: 0.0, to: 1.0, 
+            interpolator: new FloatPropertyInterpolator()},
+          { property: "radius", from: 0.0, to: c3.targetRadius, 
+            interpolator: new FloatPropertyInterpolator()},
+        ]);
+        t3.duration = duration;
+        t3.ease = new SplineEase(0.9, 0.0, 0.1, 1.0);
+
+        showScenario.addScenarioActor(t1);
+        showScenario.addScenarioActor(t2);
+        showScenario.addScenarioActor(t3);
+
+        currStage = [t1, t2, t3];
+
+        for (var j=0; j<currStage.length; j++) {
+          showScenario.addDependency(currStage[j], prevStage);
+        }
+        prevStage = currStage;
+      }
+
+      var tCenter = new Timeline(this.center);
+      tCenter.addPropertiesToInterpolate([
+        { property: "alpha", from: 0.0, to: 1.0, 
+          interpolator: new FloatPropertyInterpolator()},
+        { property: "radius", from: 0.0, to: this.center.targetRadius, 
+          interpolator: new FloatPropertyInterpolator()},
+      ]);
+      showScenario.addScenarioActor(tCenter);
+      showScenario.addDependency(tCenter, currStage);
+
+      // fade out all circles after a small delay
+      var fadeOut = new Timeline();
+      var alphaSet = function(alpha) {
+        that.center.alpha = alpha;
+        that.arc1.setAlpha(alpha);
+        that.arc2.setAlpha(alpha);
+        that.arc3.setAlpha(alpha);
+      }
+      fadeOut.addEventListener("onstatechange", 
+        function(oldState, newState, durationFraction, timelinePosition) {
+          alphaSet(1.0 - timelinePosition);
+        }
+      );
+      fadeOut.addEventListener("onpulse", 
+        function(timeline, durationFraction, timelinePosition) {
+          alphaSet(1.0 - timelinePosition);
+        }
+      );
+      fadeOut.initialDelay = 500;
+      showScenario.addScenarioActor(fadeOut);
+      showScenario.addDependency(fadeOut, [tCenter]);
+      
+      return showScenario;
+    }
+
+    this.draw = function(ctx) {
+      this.arc1.draw(ctx);
+      this.arc2.draw(ctx);
+      this.arc3.draw(ctx);
+
+      this.center.draw(ctx);
+      this.center1.draw(ctx);
+      this.center2.draw(ctx);
+      this.center3.draw(ctx);
+    }
+  }
+
+  var plantation = new CropPlantation();
+  plantation.getScenario().playLoop();
+
+  var rotationTimeline = new Timeline(plantation);
+  rotationTimeline.addPropertiesToInterpolate([
+    { property: "rotation", from: 0.0, to: 2 * Math.PI, 
+      interpolator: new FloatPropertyInterpolator()} ]);
+  rotationTimeline.duration = 10000;
+  rotationTimeline.playInfiniteLoop(RepeatBehavior.LOOP);
+
+  var repaintTimeline = new Timeline();
+  repaintTimeline.addEventListener("onpulse", draw);
+  repaintTimeline.playInfiniteLoop(RepeatBehavior.LOOP);
+
+  function draw() {
+    var start = new Date().getTime();
+    var canvas = document.getElementById("cropCircles");
+    if (canvas.getContext) {
+      var ctx = canvas.getContext("2d");
+
+      var w = canvas.width;
+      var h = canvas.height;
+
+      ctx.fillStyle = "rgb(74, 86, 40)";
+      ctx.fillRect(0,0,w,h);
+
+      ctx.save();
+      ctx.translate(w / 2, h / 2);
+      ctx.rotate(plantation.rotation);
+      ctx.translate(-w / 2, -h / 2);
+      plantation.draw(ctx);
+      ctx.restore();
+
+      var end = new Date().getTime();
+      document.getElementById("renderTime").innerHTML = end - start;
+    }
+  }
+  
+  </script>
+</body>
+
+</html>

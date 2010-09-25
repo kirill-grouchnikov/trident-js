@@ -485,15 +485,19 @@ function Timeline(mainObject) {
       var propDefinition = properties[i];
       var propName = propDefinition["property"];
       var interpolator = propDefinition["interpolator"];
+      var on = propDefinition["on"];
+      if (on == undefined) {
+        on = this.getMainObject();
+      }
 
       var keyFrames = propDefinition["goingThrough"];
       if (keyFrames != undefined) {
-        var propInfo = new KeyFramesPropertyInfo(this.getMainObject(), propName, keyFrames, interpolator);
+        var propInfo = new KeyFramesPropertyInfo(on, propName, keyFrames, interpolator);
         addProperty(propInfo);
       } else {
         var from = propDefinition["from"];
         var to = propDefinition["to"];
-        var propInfo = new PropertyInfo(this.getMainObject(), propName, from, to, interpolator);
+        var propInfo = new PropertyInfo(on, propName, from, to, interpolator);
         addProperty(propInfo);
       }
     }

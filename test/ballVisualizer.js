@@ -35,7 +35,7 @@ function TimelineVisualizer() {
         interpolator: new FloatPropertyInterpolator() }
     ]);
     dotTimeline.addEventListener("onstatechange", 
-      function(oldState, newState, durationFraction, timelinePosition) {
+      function(timeline, oldState, newState, durationFraction, timelinePosition) {
         if (newState == TimelineState.DONE) {
           deleteDot(dot);
         }
