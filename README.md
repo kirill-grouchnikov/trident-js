@@ -278,3 +278,33 @@ pulse or state change. This provides the application logic with the information 
 time has passed since the timeline has started, as well as how far along the timeline 
 is based on its ease method.
 
+##Key frames
+
+The sample Hello World code shown above interpolates foreground and background colors
+of an HTML span between two colors. What if you want to animate a specific color attribute
+from yellow to green, and then to black? One option is to create two timelines, one to animate 
+from yellow to green, and another to animate from green to black. Since the second timeline 
+needs to wait until the first one ends, you will have to either use the timeline callbacks, or 
+create a sequential timeline scenario (see later in the documentation).
+
+However, there is a simpler solution for interpolating the value of a specific attribute between 
+more than two values - **key frames**. A key frame defines the value of the field at the particular 
+timeline duration fraction (**not** timeline position). Let's see an example.
+
+![progressindication!](http://github.com/kirillcool/trident-js/raw/master/img/progressindication.png)
+
+The bluish highlighter moves from left to right, fading in as it appears on the left edge, and 
+fading out as it disappears on the right edge. There are two attributes that control the appearance 
+of the highlighter:
+
+- **xPosition** - interpolated between the left X and the right X.
+- **alpha** - starts at 0.0, goes to 1.0 at 30% of the timeline duration, stays at 1.0 until the timeline reaches its 70% mark and then goes back to 0.0
+
+Here is the matching timeline definition - note the **goingThrough** mapping:
+
+    progressTimeline.addPropertiesToInterpolate([
+      { property: "xPosition", from: startX, to: endX, interpolator: new IntPropertyInterpolator()},
+      { property: "alpha", 
+          goingThrough: { 0: 0.0, 0.3: 1.0, 0.7:1.0, 1: 0.0}, 
+          interpolator: new FloatPropertyInterpolator()}
+    ]);
