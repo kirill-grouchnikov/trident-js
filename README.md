@@ -1,7 +1,7 @@
 #Hello world
 
 **Timeline** is the most important concept in Trident.js. Most often you
-use a timeline to change one or more properties of some object over a
+use a timeline to change one or more attributes of some object over a
 certain period of time. Here is a simple example:
 
     <span id="span" style="color:rgb(0,0,255)" 
@@ -32,8 +32,9 @@ is moved quickly over and out of this element.
 A **timeline pulse** is the point where the timeline "wakes up" and changes the values of 
 all registered attributes. The values are changed based on how much time has passed since 
 the timeline has started playing. There is no guarantee how many pulses the specific
-timeline will have, and how much time will pass between each successive pair of pulses.
-This depends on the current system load and the specific implementation of the runtime.
+timeline will have or how much time will pass between each successive pair of pulses.
+This depends on the current system load and the specific implementation of the runtime
+environment.
 
 The three basic timeline concepts illustrated in this sample are:
 
