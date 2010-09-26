@@ -229,9 +229,8 @@
   plantation.getScenario().playLoop();
 
   var rotationTimeline = new Timeline(plantation);
-  rotationTimeline.addPropertiesToInterpolate([
-    { property: "rotation", from: 0.0, to: 2 * Math.PI, 
-      interpolator: new FloatPropertyInterpolator()} ]);
+  rotationTimeline.addPropertyToInterpolate("rotation", 0.0, 2 * Math.PI, 
+      new FloatPropertyInterpolator());
   rotationTimeline.duration = 10000;
   rotationTimeline.playInfiniteLoop(RepeatBehavior.LOOP);
 

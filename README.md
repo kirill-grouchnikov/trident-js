@@ -6,6 +6,7 @@ Trident.js is a Javascript animation library available under BSD license.
 use a timeline to change one or more properties of some object over a
 certain period of time. Here is a simple example:
 
+<code>
 &lt;span id="span" style="color:rgb(0,0,255)" 
     onmouseover="rolloverTimeline.play();" 
     onmouseout="rolloverTimeline.playReverse();"&gt;Some text&lt;/span&gt;
@@ -23,3 +24,4 @@ certain period of time. Here is a simple example:
   // over the period of 2 seconds
   rolloverTimeline.duration = 2000;
 &lt;/script&gt;
+</code>
