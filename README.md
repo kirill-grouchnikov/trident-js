@@ -147,17 +147,17 @@ The first method starts an infinite loop (at least until the timeline is cancele
 The second method runs the timeline for the specified number of loops. The 
 <code>RepeatBehavior</code> specifies what happens when the looping timeline reaches the 
 "end" of the loop. Each timeline loop changes the internal **duration fraction** 
-which is a number between *0.0* and *1.0*. While a regular 
-timeline ends once the fraction reaches the value *1.0*, a looping timeline 
+which is a number between 0.0 and 1.0. While a regular 
+timeline ends once the fraction reaches the value 1.0, a looping timeline 
 continues. The difference between the repeat behaviors is in the way the timeline 
 fraction is computed: 
 
-- In the **loop** mode the timeline fraction starts from *0.0*, is 
-interpolated to *1.0*, and once that value is reached, it is reset 
-back to *0.0*.
+- In the **loop** mode the timeline fraction starts from 0.0, is 
+interpolated to 1.0, and once that value is reached, it is reset 
+back to 0.0.
 - In the **reverse** mode, the timeline fraction is interpolated during 
-odd loops from *0.0* to *1.0*, and is interpolated during 
-even loops from *1.0* down to *0.0*.
+odd loops from 0.0 to 1.0, and is interpolated during 
+even loops from 1.0 down to 0.0.
 
 As an example, the loop mode can be used for circular indefinite progress indication, 
 where the matching "lead" angle is interpolated between 0 and 360 degrees. The reverse 
@@ -229,10 +229,10 @@ For a timeline with non-zero delay, the following events are fired:
 ###Timeline position
 
 Each timeline pulse has two associated fractional values - **duration fraction** and 
-**timeline position**. Duration fraction is a number between *0.0* and 
-*1.0* that indicates the absolute percentage of the full timeline duration 
+**timeline position**. Duration fraction is a number between 0.0 and 
+1.0 that indicates the absolute percentage of the full timeline duration 
 that has passed. For example, in a timeline that lasts 500 ms, a timeline pulse happening 
-200 ms after the timeline has begun has the associated duration fraction of <code>0.4</code>.
+200 ms after the timeline has begun has the associated duration fraction of 0.4.
 
 However, some application scenarios require non-linear rate of change for recreating 
 realistic animations of the real physical world. For example, if your application timeline 
@@ -242,7 +242,7 @@ move at constant speed. For example, a car starts from zero velocity, accelerate
 constant speed, maintains it throughout the main part of the movement and then decelerates 
 to zero velocity as it reaches its final location.
 
-The **timeline position** is a fractional number between *0.0* and *1.0* 
+The **timeline position** is a fractional number between 0.0 and 1.0 
 that indicates how far the timeline has progressed based on the current **ease function**. 
 The ease function takes the linearly increasing duration fraction and translates it to the 
 matching timeline position. The <code>Timeline.ease</code> attribute can be modified to specify 
