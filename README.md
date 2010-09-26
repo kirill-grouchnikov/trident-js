@@ -147,17 +147,17 @@ The first method starts an infinite loop (at least until the timeline is cancele
 The second method runs the timeline for the specified number of loops. The 
 <code>RepeatBehavior</code> specifies what happens when the looping timeline reaches the 
 "end" of the loop. Each timeline loop changes the internal **duration fraction** 
-which is a number between <code>0.0</code> and <code>1.0</code>. While a regular 
-timeline ends once the fraction reaches the value <code>1.0</code>, a looping timeline 
+which is a number between *0.0* and *1.0*. While a regular 
+timeline ends once the fraction reaches the value *1.0*, a looping timeline 
 continues. The difference between the repeat behaviors is in the way the timeline 
 fraction is computed: 
 
-- In the **loop** mode the timeline fraction starts from <code>0.0</code>, is 
-interpolated to <code>1.0</code>, and once that value is reached, it is reset 
-back to <code>0.0</code>.
+- In the **loop** mode the timeline fraction starts from *0.0*, is 
+interpolated to *1.0*, and once that value is reached, it is reset 
+back to *0.0*.
 - In the **reverse** mode, the timeline fraction is interpolated during 
-odd loops from <code>0.0</code> to <code>1.0</code>, and is interpolated during 
-even loops from <code>1.0</code> down to <code>0.0</code>.
+odd loops from *0.0* to *1.0*, and is interpolated during 
+even loops from *1.0* down to *0.0*.
 
 As an example, the loop mode can be used for circular indefinite progress indication, 
 where the matching "lead" angle is interpolated between 0 and 360 degrees. The reverse 
@@ -229,8 +229,8 @@ For a timeline with non-zero delay, the following events are fired:
 ###Timeline position
 
 Each timeline pulse has two associated fractional values - **duration fraction** and 
-**timeline position**. Duration fraction is a number between <code>0.0</code> and 
-<code>1.0</code> that indicates the absolute percentage of the full timeline duration 
+**timeline position**. Duration fraction is a number between *0.0* and 
+*1.0* that indicates the absolute percentage of the full timeline duration 
 that has passed. For example, in a timeline that lasts 500 ms, a timeline pulse happening 
 200 ms after the timeline has begun has the associated duration fraction of <code>0.4</code>.
 
@@ -242,7 +242,7 @@ move at constant speed. For example, a car starts from zero velocity, accelerate
 constant speed, maintains it throughout the main part of the movement and then decelerates 
 to zero velocity as it reaches its final location.
 
-The **timeline position** is a fractional number between <code>0.0</code> and <code>1.0</code> 
+The **timeline position** is a fractional number between *0.0* and *1.0* 
 that indicates how far the timeline has progressed based on the current **ease function**. 
 The ease function takes the linearly increasing duration fraction and translates it to the 
 matching timeline position. The <code>Timeline.ease</code> attribute can be modified to specify 
@@ -260,7 +260,7 @@ under <code>SplineEase(0.6, 0.0, 0.4, 1.0)</code>:
 Here, the timeline position has almost linear rate of change throughout the entire duration 
 of the timeline, with little acceleration in the beginning, and little deceleration at the 
 end. Here is the mapping between duration fraction and timeline position under 
-<code>SplineEase(0.8, 0.0, 0.2, 1.0)</code> with factor of <code>0.8</code>:
+<code>SplineEase(0.8, 0.0, 0.2, 1.0)</code>:
 
 ![ease80!](http://github.com/kirillcool/trident-js/raw/master/img/ease-80.png)
 
