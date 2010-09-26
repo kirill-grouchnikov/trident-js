@@ -190,7 +190,7 @@ may result in jarring visuals, especially if it is done at the "peak" of the pul
 Calling <code>Timeline.cancelAtCycleBreak()</code> method will indicate that the looping 
 animation should stop once it reaches the end of the loop.
 
-##Tracking timeline state
+###Tracking timeline state
 Simple application scenarios create timelines, configure them with attributes to interpolate 
 and then play them. However, a more complicated application logic may require tracking the 
 state changes of the timeline. The <code>Timeline.addEventListener</code> API allows 
@@ -202,4 +202,79 @@ This listener will be called whenever the **timeline state** is changed. For exa
 has changed its state from **playing** to **suspended**.
 - <code>addEventListener("onpulse", function(timeline, durationFraction, timelinePosition))</code>.
 This listener will be called on every **timeline pulse**. 
+
+##Additional configuration
+###Timeline duration
+
+By default, a Trident.js timeline runs for 500 milliseconds. To change the default timeline 
+duration change the <code>duration</code> attribute, setting the required duration in milliseconds. 
+At runtime, the timeline interpolates all registered properties and notifies all registered 
+listeners. Note that while the number of timeline pulses is directly proportional to the timeline 
+duration, the actual number of pulses, as well as the intervals between each successive pair 
+of pulses depends on the current load of the system and the runtime environment. As such, the 
+application code **must not** make any assumptions about when the timeline pulses will happen, and how many pulses will happen throughout the duration of the timeline.
+
+The <code>Timeline.initialDelay</code> attribute specifies the number of milliseconds the timeline 
+should wait after the application code to <code>play()</code> before starting firing the timeline 
+pulses. For a timeline with no initial delay, the following lifecycle events are fired:
+
+- **idle** -> **ready** immediately after call to <code>Timeline.play()</code>
+- **ready** -> ** playing forward** immediately afterwards
+
+For a timeline with non-zero delay, the following events are fired:
+
+- **idle** -> **ready** immediately after call to <code>Timeline.play()</code>
+- **ready** -> ** playing forward** after the specified initial delay has passed
+
+###Timeline position
+
+Each timeline pulse has two associated fractional values - **duration fraction** and 
+**timeline position**. Duration fraction is a number between <code>0.0</code> and 
+<code>1.0</code> that indicates the absolute percentage of the full timeline duration 
+that has passed. For example, in a timeline that lasts 500 ms, a timeline pulse happening 
+200 ms after the timeline has begun has the associated duration fraction of <code>0.4</code>.
+
+However, some application scenarios require non-linear rate of change for recreating 
+realistic animations of the real physical world. For example, if your application timeline 
+is interpolating the <code>Y</code> location of a falling ball, strict linear interpolation 
+will result in overly artificial movement. When objects in the real world move, they don't 
+move at constant speed. For example, a car starts from zero velocity, accelerates to a 
+constant speed, maintains it throughout the main part of the movement and then decelerates 
+to zero velocity as it reaches its final location.
+
+The **timeline position** is a fractional number between <code>0.0</code> and <code>1.0</code> 
+that indicates how far the timeline has progressed based on the current **ease function**. 
+The ease function takes the linearly increasing duration fraction and translates it to the 
+matching timeline position. The <code>Timeline.ease</code> attribute can be modified to specify 
+a custom ease function on the timeline. It should be have a <code>map()</code> function that gets
+a duration fraction as a float and returns the matching timeline position.
+
+The core library provides a number of simple ease functions - <code>LinearEase</code>,
+<code>SineEase</code> and <code>SplineEase</code>. To illustrate the difference between the 
+different ease functions, we will use the core <code>SplineEase</code> ease function. The 
+following screenshot shows the mapping between duration fraction and timeline position 
+under <code>SplineEase(0.6, 0.0, 0.4, 1.0)</code>:
+
+![ease40!](http://github.com/kirillcool/trident-js/raw/master/img/ease-40.png)
+
+Here, the timeline position has almost linear rate of change throughout the entire duration 
+of the timeline, with little acceleration in the beginning, and little deceleration at the 
+end. Here is the mapping between duration fraction and timeline position under 
+<code>SplineEase(0.8, 0.0, 0.2, 1.0)</code> with factor of <code>0.8</code>:
+
+![ease80!](http://github.com/kirillcool/trident-js/raw/master/img/ease-80.png)
+
+Here, the acceleration phase is longer, and the rate of change between the acceleration 
+and deceleration phases is higher. As you can see, you can simulate different physical 
+processes using different factors of <code>SplineEase</code> ease function. Application code 
+can create custom implementation of the ease function as well.
+
+###Putting it all together
+
+Interpolation of field values for fields registered for the specific timeline is done 
+based on the **timeline position** and not duration fraction. Application callbacks registered 
+with the <code>Timeline.addEventListener</code> method get both values on every timeline
+pulse or state change. This provides the application logic with the information how much 
+time has passed since the timeline has started, as well as how far along the timeline 
+is based on its ease method.
 
