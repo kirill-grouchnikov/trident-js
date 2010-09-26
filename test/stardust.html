@@ -86,8 +86,6 @@
         var outerStartSpan = 5;
         var outerFinalSpan = 20;
         var star = new Star(mousePointerX, mousePointerY, outerStartSpan);
-        document.getElementById("stateTracking").innerHtml += 
-          (mousePointerX + ":" + mousePointerY + ":" + outerStartSpan + "<br>");
         stars[stars.length] = star;
         
         var starTimeline = new Timeline(star);
