@@ -308,3 +308,26 @@ Here is the matching timeline definition - note the **goingThrough** mapping:
           goingThrough: { 0: 0.0, 0.3: 1.0, 0.7:1.0, 1: 0.0}, 
           interpolator: new FloatPropertyInterpolator()}
     ]);
+
+##Timeline scenarios
+**Timeline scenario** allows combining multiple timelines in a parallel, sequential 
+or custom order. To create a timeline scenario, use the following APIs of 
+the <code>TimelineScenario</code> class:
+
+- <code>addScenarioActor(actor)</code> adds the specified actor (timeline)
+- <code>addDependency(actor, [waitFor])</code> specifies the dependencies between the actors (timelines)
+
+If there are no dependencies between the scenario actors, calling <code>TimelineScenario.play()</code>
+will start playing all the scenario timelines at the same time (respecting the individual settings
+such as initial delay, duration etc.)
+
+The <code>TimelineScenario.addDependency</code> can be used to specify ordering between
+timelines. The simplest example is a *sequential* scenario where the timelines are run one
+after another: the first timeline starts, the second one waits for it to complete and then starts
+and so on.
+
+A more complex example is a *rendezvous* scenario. Here, the timelines are played in "stages".
+Once all the timelines in stage N have completed, the timelines in stage N+1 start playing (in parallel).
+Finally, you can also create a completely custom graph of dependencies. Just make sure that 
+you don't have any loops. For example, a loop of size 2 would have timeline A depending 
+on timeline B and timeline B depending on timeline A. Such a scenario will never complete.
