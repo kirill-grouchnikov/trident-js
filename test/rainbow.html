@@ -1,0 +1,155 @@
+<html>
+
+<head>
+  <script type='text/javascript' src='../trident.js'></script>
+  <script type='text/javascript' src='perlin.js'></script>
+  <script type='text/javascript' src='utils.js'></script>
+</head>
+
+<body onload="draw();">
+  <center><canvas id="rainbow" width="400" height="500"></canvas></center><br>
+  <center>Frame render time: <span id="renderTime"></span> ms</center><br>
+  
+  <script type="text/javascript">
+  var canvas = document.getElementById("rainbow");
+  var ctx = canvas.getContext("2d");
+
+  function createNoiseImage(ctx, width, height) {
+    var perlin = new Perlin();
+    var imageData = ctx.createImageData(width, height);
+    var xFactor = 0.8;
+    var yFactor = 0.8;
+    var m2 = xFactor * width * xFactor * width + yFactor * height * yFactor * height;
+    for (var j = 0; j < width; j++) {
+      var jj = yFactor * j;
+      for (var i = 0; i < height; i++) {
+        var ii = xFactor * i;
+        var z = Math.sqrt(m2 - ii * ii - jj * jj);
+        var noise = 0.5 + 0.5 * perlin.noise(ii, jj, z);
+        var likeness = Math.max(0.0, Math.min(1.0, 2.0 * noise));
+        var val = parseInt(50 * likeness);
+        var index = (i + j * width) * 4;
+        imageData.data[index + 0] = val;
+        imageData.data[index + 1] = val;
+        imageData.data[index + 2] = val;
+        imageData.data[index + 3] = 0xff;
+      }
+    }
+    return imageData;
+  }
+
+  var offscreen = document.createElement ("canvas");
+  var offscreen_ctx = offscreen.getContext ("2d");
+  var noiseTileSize = 100;
+  offscreen.width = noiseTileSize;
+  offscreen.height = noiseTileSize;
+  var noiseImage = createNoiseImage(offscreen_ctx, noiseTileSize, noiseTileSize);
+  offscreen_ctx.putImageData(noiseImage, 0, 0);
+
+  function Stripe(color, width, heightProp, offset) {
+    this.color = color;
+    this.width = width;
+    this.heightProp = heightProp;
+    this.offset = 0;
+  }
+
+  var stripes = [
+    new Stripe("rgb(48, 4, 21)", 50, 0.55),
+    new Stripe("rgb(190, 24, 24)", 25, 0.52),
+    new Stripe("rgb(195, 39, 1)", 45, 0.54),
+    new Stripe("rgb(192, 94, 5)", 35, 0.48),
+    new Stripe("rgb(196, 161, 4)", 70, 0.53),
+    new Stripe("rgb(96, 134, 0)", 35, 0.55),
+    new Stripe("rgb(1, 129, 111)", 70, 0.50),
+  ];
+
+  for (var i=0; i<stripes.length; i++) {
+    var stripeOffsetTimeline = new Timeline(stripes[i]);
+    stripeOffsetTimeline.addPropertyToInterpolate("offset", -20, 20, new FloatPropertyInterpolator());
+    stripeOffsetTimeline.duration = 1000 + randomInt(2000);
+    stripeOffsetTimeline.playInfiniteLoopSkipping(RepeatBehavior.REVERSE, randomInt(stripeOffsetTimeline.duration * 2 / 3));
+  }
+  
+  var redrawTimeline = new Timeline();
+  redrawTimeline.addEventListener("onpulse", draw);
+  redrawTimeline.playInfiniteLoop(RepeatBehavior.LOOP);
+  
+  function draw() {
+    var start = new Date().getTime();
+    ctx.fillStyle = "rgb(5, 38, 34)";
+    ctx.fillRect(0,0,canvas.width, canvas.height);
+
+    var x = canvas.width + 260;
+    var extraOffset = 50;
+    for (var i=0; i<stripes.length; i++) {
+      var stripe = stripes[i];
+      var offset = stripe.offset;
+
+      ctx.globalAlpha = 0.2;
+      ctx.save();
+      ctx.translate(0, extraOffset);
+      ctx.beginPath();
+      ctx.moveTo(x, canvas.height);
+      ctx.lineTo(x - stripe.width, canvas.height);
+      ctx.lineTo(x - stripe.width - canvas.height - extraOffset, 0 - extraOffset);
+      ctx.lineTo(x - canvas.height - extraOffset, -extraOffset);
+      ctx.closePath();
+      ctx.fillStyle = stripe.color;
+      ctx.fill();
+      ctx.restore();
+      ctx.globalAlpha = 1.0;
+
+      var stripeColor = parseColor(stripe.color);
+      var stripeColorHsb = rgbToHsb(stripeColor[0], stripeColor[1], stripeColor[2]);
+      var stripeColorLighter = hsbToRgb(stripeColorHsb[0], stripeColorHsb[1], 
+        1.0 - (1.0 - stripeColorHsb[2]) / 1.1);
+      var stripeColorDarker = hsbToRgb(stripeColorHsb[0], stripeColorHsb[1], 
+        0.3 * stripeColorHsb[2]);
+      var stripeColorSaturated = hsbToRgb(stripeColorHsb[0], 1.0 - (1.0 - stripeColorHsb[1]) / 1.5, 
+        stripeColorHsb[2]);
+      var stripeHeight = parseInt(canvas.height * stripe.heightProp) + extraOffset;
+      ctx.save();
+      ctx.translate(-offset, extraOffset - offset);
+      ctx.beginPath();
+      ctx.moveTo(x, canvas.height);
+      ctx.lineTo(x - stripe.width - 1, canvas.height);
+      ctx.lineTo(x - stripe.width - 1 - stripeHeight, canvas.height - stripeHeight);
+      ctx.lineTo(x - stripeHeight, canvas.height - stripeHeight);
+      ctx.closePath();
+
+      var dist = stripe.width / 2.0;
+      var fillGrad = ctx.createLinearGradient(x - stripeHeight, canvas.height - stripeHeight, 
+        x - stripeHeight - dist, canvas.height - stripeHeight + dist);
+      fillGrad.addColorStop(0.0, stripeColorSaturated);
+      fillGrad.addColorStop(0.9, stripeColorSaturated);
+      fillGrad.addColorStop(0.9, stripeColorLighter);
+      fillGrad.addColorStop(1.0, stripeColorLighter);
+      ctx.fillStyle = fillGrad;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(x - stripe.width - 1, canvas.height);
+      ctx.lineTo(x - stripe.width - 1 - stripeHeight, canvas.height - stripeHeight);
+      ctx.lineTo(x - stripeHeight, canvas.height - stripeHeight);
+      ctx.strokeStyle = stripeColorDarker;
+      ctx.stroke();
+      
+      ctx.restore();
+      x -= stripe.width;
+    }
+
+    ctx.globalAlpha = 0.25;
+    for (var xOffset = 0; xOffset < canvas.width; xOffset += noiseTileSize) {
+      for (var yOffset = 0; yOffset < canvas.height; yOffset += noiseTileSize) {
+        ctx.drawImage(offscreen, xOffset, yOffset);
+      }
+    }
+    ctx.globalAlpha = 1.0;
+    var end = new Date().getTime();
+    document.getElementById("renderTime").innerHTML = end - start;
+  }
+  </script>
+
+</body>
+
+</html>

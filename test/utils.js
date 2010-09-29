@@ -19,12 +19,12 @@ function hsbToRgb(hue, saturation, brightness) {
   if (saturation == 0) {
     r = g = b = Math.floor(brightness * 255.0 + 0.5);
   } else {
-    var h = parseInt((hue - Math.floor(hue)) * 6.0);
+    var h = parseFloat((hue - Math.floor(hue)) * 6.0);
     var f = h - Math.floor(h);
     var p = brightness * (1.0 - saturation);
     var q = brightness * (1.0 - saturation * f);
     var t = brightness * (1.0 - (saturation * (1.0 - f)));
-    switch (h) {
+    switch (parseInt(h)) {
       case 0:
       r = Math.floor(brightness * 255.0 + 0.5);
       g = Math.floor(t * 255.0 + 0.5);

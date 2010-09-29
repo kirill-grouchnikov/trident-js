@@ -49,9 +49,9 @@
           var dist = 50 + 10 * Math.random();
           var radius = 2 + 2 * Math.random();
           for (var delta = 0.6; delta <= 1.0; delta += 0.2) {
-            var ringSaturation = 1.0 - (1.0 - saturation) * (1-0.2*delta);
+            var ringSaturation = 1.0 - (1.0 - saturation) * (1-0.5*delta);
             var ringBrightness = brightness * (1.75 - 1.25*delta);
-            var ringHue = hue + delta * 0.04;
+            var ringHue = hue + delta * 0.2;
             if (ringHue > 1.0)
               ringHue -= 1.0;
             var ringRgbColor = parseColor(hsbToRgb(ringHue, ringSaturation, ringBrightness));
