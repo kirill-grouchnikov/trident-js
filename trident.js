@@ -29,9 +29,12 @@
  */
  
 /*
- * Some of the classes and methods are based on the BSD-licensed code from <a
+ * Spline ease and key frames are based on the BSD-licensed code from <a
  * href="https://timingframework.dev.java.net">TimingFramework</a> by Chet Haase
- * and Romain Guy. 
+ * and Romain Guy.
+ *
+ * Some of the ease classes are based on the MIT-licensed code from
+ * <a href="http://github.com/sole/tween.js">Tween.js</a> by Soledad Penadés.
  */
 var lastTime = new Date().getTime();
 
@@ -210,6 +213,261 @@ function SplineEase(x1, y1, x2, y2) {
   for (var i = 0; i < this.lengths.length; ++i) {
     var lengthItem = this.lengths[i];
     lengthItem.setFraction(prevLength);
+  }
+}
+
+function QuadraticEaseIn() {
+  this.map = function(durationFraction) {
+    return durationFraction * durationFraction;
+  }
+}
+
+function QuadraticEaseOut() {
+  this.map = function(durationFraction) {
+    return -durationFraction * (durationFraction - 2);
+  }
+}
+
+function QuadraticEaseInOut() {
+  this.map = function(durationFraction) {
+    if ((durationFraction *= 2) < 1) {
+      return 0.5 * durationFraction *durationFraction;
+    }
+    return - 0.5 * (--durationFraction * (durationFraction - 2) - 1);
+  }
+}
+
+function CubicEaseIn() {
+  this.map = function(durationFraction) {
+    return durationFraction * durationFraction * durationFraction;
+  }
+}
+
+function CubicEaseOut() {
+  this.map = function(durationFraction) {
+    return --durationFraction * durationFraction * durationFraction + 1;
+  }
+}
+
+function CubicEaseInOut() {
+  this.map = function(durationFraction) {
+    if ( (durationFraction *= 2) < 1 ) {
+      return 0.5 * durationFraction * durationFraction * durationFraction;
+    }
+    return 0.5 * ((durationFraction -= 2) * durationFraction * durationFraction + 2 );
+  }
+}
+
+function QuarticEaseIn() {
+  this.map = function(durationFraction) {
+    return durationFraction * durationFraction * durationFraction * durationFraction;
+  }
+}
+
+function QuarticEaseOut() {
+  this.map = function(durationFraction) {
+    return -(--durationFraction * durationFraction * durationFraction * durationFraction - 1 );
+  }
+}
+
+function QuarticEaseInOut() {
+  this.map = function(durationFraction) {
+    if ((durationFraction *= 2) < 1) {
+      return 0.5 * durationFraction * durationFraction * durationFraction * durationFraction;
+    }
+    return -0.5 * ((durationFraction -= 2) * durationFraction * durationFraction * durationFraction - 2);
+  }
+}
+
+function SinusoidalEaseIn() {
+  this.map = function(durationFraction) {
+    return - Math.cos(durationFraction * Math.PI / 2) + 1;
+  }
+}
+
+function SinusoidalEaseOut() {
+  this.map = function(durationFraction) {
+    return Math.sin(durationFraction * Math.PI / 2);
+  }
+}
+
+function SinusoidalEaseInOut() {
+  this.map = function(durationFraction) {
+    return -0.5 * (Math.cos(Math.PI * durationFraction) - 1);
+  }
+}
+
+function ExponentialEaseIn() {
+  this.map = function(durationFraction) {
+    return durationFraction == 0 ? 0 : Math.pow(2, 10 * (durationFraction - 1));
+  }
+}
+
+function ExponentialEaseOut() {
+  this.map = function(durationFraction) {
+    return durationFraction == 1 ? 1 : -Math.pow(2, - 10 * durationFraction) + 1;
+  }
+}
+
+function ExponentialEaseInOut() {
+  this.map = function(durationFraction) {
+    if (durationFraction == 0) {
+      return 0;
+    }
+    if (durationFraction == 1) {
+      return 1;
+    }
+    if ((durationFraction *= 2) < 1) {
+      return 0.5 * Math.pow(2, 10 * (durationFraction - 1));
+    }
+    return 0.5 * (-Math.pow(2, -10 * (durationFraction - 1)) + 2);
+  }
+}
+
+function CircularEaseIn() {
+  this.map = function(durationFraction) {
+    return -(Math.sqrt(1 - durationFraction * durationFraction) - 1);
+  }
+}
+
+function CircularEaseOut() {
+  this.map = function(durationFraction) {
+    return Math.sqrt(1 - --durationFraction * durationFraction);
+  }
+}
+
+function CircularEaseInOut() {
+  this.map = function(durationFraction) {
+    if ((durationFraction /= 0.5) < 1) {
+      return -0.5 * (Math.sqrt(1 - durationFraction * durationFraction) - 1);
+    }
+    return 0.5 * (Math.sqrt(1 - (durationFraction -= 2) * durationFraction) + 1);
+  }
+}
+
+function ElasticEaseIn() {
+  this.map = function(durationFraction) {
+    var s, a = 0.1, p = 0.4;
+    if (durationFraction == 0) {
+      return 0;
+    } 
+    if (durationFraction == 1) {
+      return 1;
+    } 
+    if (!p) {
+      p = 0.3;
+    }
+    if (!a || a < 1) { 
+      a = 1; 
+      s = p / 4;
+    } else {
+      s = p / (2 * Math.PI) * Math.asin(1 / a);
+    }
+    return -(a * Math.pow(2, 10 * (durationFraction -= 1)) * Math.sin((durationFraction - s) * (2 * Math.PI) / p));
+  }
+}
+
+function ElasticEaseOut() {
+  this.map = function(durationFraction) {
+    var s, a = 0.1, p = 0.4;
+    if (durationFraction == 0) {
+      return 0; 
+    }
+    if (durationFraction == 1) {
+      return 1; 
+    }
+    if (!p) {
+      p = 0.3;
+    }
+    if (!a || a < 1) { 
+      a = 1; 
+      s = p / 4; 
+    } else {
+      s = p / (2 * Math.PI) * Math.asin(1 / a);
+    }
+    return (a * Math.pow(2, - 10 * durationFraction) * Math.sin((durationFraction - s) * (2 * Math.PI) / p) + 1);
+  }
+}
+
+function ElasticEaseInOut() {
+  this.map = function(durationFraction) {
+    var s, a = 0.1, p = 0.4;
+    if (durationFraction == 0) {
+      return 0; 
+    }
+    if (durationFraction == 1) {
+      return 1;
+    } 
+    if (!p) {
+      p = 0.3;
+    }
+    if (!a || a < 1) { 
+      a = 1; 
+      s = p / 4; 
+    } else {
+      s = p / (2 * Math.PI) * Math.asin(1 / a);
+    }
+    if ((durationFraction *= 2) < 1) {
+      return -0.5 * (a * Math.pow(2, 10 * (durationFraction -= 1)) * Math.sin((durationFraction - s) * (2 * Math.PI) / p));
+    }
+    return a * Math.pow(2, -10 * (durationFraction -= 1)) * Math.sin((durationFraction - s) * (2 * Math.PI) / p) * 0.5 + 1;
+  }
+}
+
+function BackEaseIn() {
+  this.map = function(durationFraction) {
+    var s = 1.70158;
+    return durationFraction * durationFraction * ((s + 1) * durationFraction - s);
+  }
+}
+
+function BackEaseOut() {
+  this.map = function(durationFraction) {
+    var s = 1.70158;
+    return (durationFraction = durationFraction - 1) * durationFraction * ((s + 1) * durationFraction + s) + 1;
+  }
+}
+
+function BackEaseInOut() {
+  this.map = function(durationFraction) {
+    var s = 1.70158 * 1.525;
+    if ((durationFraction *= 2) < 1) {
+      return 0.5 * (durationFraction * durationFraction * ((s + 1) * durationFraction - s));
+    }
+    return 0.5 * ((durationFraction -= 2 ) * durationFraction * ((s + 1) * durationFraction + s) + 2);
+  }
+}
+
+function BounceEaseIn() {
+  this.bo = new BounceEaseOut();
+  this.map = function(durationFraction) {
+    return 1 - this.bo.map(1 - durationFraction);
+  }
+}
+
+function BounceEaseOut() {
+  this.map = function(durationFraction) {
+    if ((durationFraction /= 1) < (1 / 2.75)) {
+      return 7.5625 * durationFraction * durationFraction;
+    } else if (durationFraction < (2 / 2.75)) {
+      return 7.5625 * (durationFraction -= (1.5 / 2.75)) * durationFraction + 0.75;
+    } else if (durationFraction < (2.5 / 2.75)) {
+      return 7.5625 * (durationFraction -= (2.25 / 2.75)) * durationFraction + 0.9375;
+    } else {
+      return 7.5625 * (durationFraction -= (2.625 / 2.75)) * durationFraction + 0.984375;
+    } 
+  }
+}
+
+function BounceEaseInOut() {
+  this.bi = new BounceEaseIn();
+  this.bo = new BounceEaseOut();
+
+  this.map = function(durationFraction) {
+    if (durationFraction < 0.5) {
+      return this.bi.map(durationFraction * 2) * 0.5;
+    }
+    return this.bo.map(durationFraction * 2 - 1) * 0.5 + 0.5;
   }
 }
 
