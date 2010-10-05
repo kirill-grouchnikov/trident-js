@@ -249,11 +249,10 @@ matching timeline position. The <code>Timeline.ease</code> attribute can be modi
 a custom ease function on the timeline. It should be have a <code>map()</code> function that gets
 a duration fraction as a float and returns the matching timeline position.
 
-The core library provides a number of simple ease functions - <code>LinearEase</code>,
-<code>SineEase</code> and <code>SplineEase</code>. To illustrate the difference between the 
+The core library provides a number ease functions. To illustrate the difference between the 
 different ease functions, we will use the core <code>SplineEase</code> ease function. The 
 following screenshot shows the mapping between duration fraction and timeline position 
-under <code>SplineEase(0.6, 0.0, 0.4, 1.0)</code>:
+under <code>SplineEase(0.4, 0.0, 0.6, 1.0)</code>:
 
 ![ease40!](http://github.com/kirillcool/trident-js/raw/master/img/ease-40.png)
 

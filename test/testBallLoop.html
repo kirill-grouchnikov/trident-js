@@ -88,7 +88,7 @@ function run() {
   switch (selectedEaseIndex) {
     case 1: selectedEase = new LinearEase(); break;
     case 2: selectedEase = new SineEase(); break;
-    case 3: selectedEase = new SplineEase(0.2, 0.0, 0.8, 1.0); break;
+    case 3: selectedEase = new SplineEase(0.4, 0.0, 0.6, 1.0); break;
     case 4: selectedEase = new SplineEase(0.8, 0.0, 0.2, 1.0); break;
     case 5: selectedEase = new QuadraticEaseIn(); break;
     case 6: selectedEase = new QuadraticEaseOut(); break;
@@ -165,7 +165,7 @@ function resume() {
   <select id="ease">
   <option value="1">1. Linear</option>
   <option value="2">2. Sine</option>
-  <option value="3">3. Spline (0.2, 0.0)-(0.8,1.0)</option>
+  <option value="3">3. Spline (0.4, 0.0)-(0.6,1.0)</option>
   <option value="4">4. Spline (0.8, 0.0)-(0.2,1.0)</option>
   <option value="5">5. Quadratic in</option>
   <option value="6">6. Quadratic out</option>
