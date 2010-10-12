@@ -1,0 +1,213 @@
+<html>
+
+<head>
+  <script type='text/javascript' src='../trident.js'></script>
+  <script type='text/javascript' src='perlin.js'></script>
+  <script type='text/javascript' src='utils.js'></script>
+</head>
+
+<body onload="draw();">
+  <center><canvas id="hexagons" width="400" height="500"></canvas></center><br>
+  <center>Frame render time: <span id="renderTime"></span> ms</center><br>
+  
+  <script type="text/javascript">
+  var canvas = document.getElementById("hexagons");
+  var ctx = canvas.getContext("2d");
+  
+  var hexaSide = 30;
+  var hexa3 = hexaSide * Math.sqrt(3);
+  var hexa3_2 = hexa3 / 2.0;
+
+  function createNoiseImage(ctx, width, height) {
+    var perlin = new Perlin();
+    var imageData = ctx.createImageData(width, height);
+    var xFactor = 0.8;
+    var yFactor = 0.8;
+    var m2 = xFactor * width * xFactor * width + yFactor * height * yFactor * height;
+    for (var j = 0; j < width; j++) {
+      var jj = yFactor * j;
+      for (var i = 0; i < height; i++) {
+        var ii = xFactor * i;
+        var z = Math.sqrt(m2 - ii * ii - jj * jj);
+        var noise = 0.5 + 0.5 * perlin.noise(ii, jj, z);
+        var likeness = Math.max(0.0, Math.min(1.0, 2.0 * noise));
+        var val = parseInt(50 * likeness);
+        var index = (i + j * width) * 4;
+        imageData.data[index + 0] = val;
+        imageData.data[index + 1] = val;
+        imageData.data[index + 2] = val;
+        imageData.data[index + 3] = 0xff;
+      }
+    }
+    return imageData;
+  }
+
+  function Hexagon(row, column, hue, sat, brightness) { 
+    this.row = row;
+    this.column = column;
+    this.hue = hue;
+    this.sat = sat;
+    this.brightness = brightness;
+    this.extraBrightness = 1.0;
+    
+    this.getMidX = function() {
+      var offsetX = this.column * hexaSide * 3 / 2;
+      return offsetX + hexaSide / 2;
+    }
+    
+    this.getMidY = function() {
+      var offsetY = this.row * hexa3;
+      if (this.column % 2 == 1) {
+        offsetY -= hexa3_2;
+      }
+      return offsetY + hexa3_2;
+    }
+    
+    this.draw = function(ctx) {
+      ctx.save();
+      var offsetX = this.getMidX() - hexaSide / 2;
+      var offsetY = this.getMidY() - hexa3_2;
+      ctx.translate(offsetX, offsetY);
+
+      var baseBrightness = 1.0 - (1.0 - brightness) * this.extraBrightness;
+      var baseSat = sat * (0.5 + this.extraBrightness / 2.0);
+      
+      var mainColor = hsbToRgb(hue, baseSat, baseBrightness);
+      var brighterColor = hsbToRgb(hue, baseSat / 1.5, 1.0 - (1.0-baseBrightness) / 3.0);
+      var dimmerColor = hsbToRgb(hue, baseSat, baseBrightness / 1.5);
+      var saturatedColor = hsbToRgb(hue, 1.0 - (1.0-baseSat) / 2.0, baseBrightness / 1.4);
+
+      var odd = (this.column % 2 == 1);
+      // top
+      ctx.fillStyle = odd? saturatedColor : brighterColor;
+      ctx.strokeStyle = odd? saturatedColor : brighterColor;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(hexaSide, 0);
+      ctx.lineTo(hexaSide / 2, hexa3_2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      // top right
+      ctx.fillStyle = odd ? mainColor : dimmerColor;
+      ctx.strokeStyle = odd ? mainColor : dimmerColor;
+      ctx.beginPath();
+      ctx.moveTo(hexaSide, 0);
+      ctx.lineTo(3*hexaSide/2, hexa3_2);
+      ctx.lineTo(hexaSide / 2, hexa3_2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      // bottom right
+      ctx.fillStyle = odd ? dimmerColor : mainColor;
+      ctx.strokeStyle = odd ? dimmerColor : mainColor;
+      ctx.beginPath();
+      ctx.moveTo(3*hexaSide/2, hexa3_2);
+      ctx.lineTo(hexaSide, hexa3);
+      ctx.lineTo(hexaSide / 2, hexa3_2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      // bottom
+      ctx.fillStyle = odd ? brighterColor : saturatedColor;
+      ctx.strokeStyle = odd ? brighterColor : saturatedColor;
+      ctx.beginPath();
+      ctx.moveTo(hexaSide, hexa3);
+      ctx.lineTo(0, hexa3);
+      ctx.lineTo(hexaSide / 2, hexa3_2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      // bottom left
+      ctx.fillStyle = odd ? mainColor : brighterColor;
+      ctx.strokeStyle = odd ? mainColor : brighterColor;
+      ctx.beginPath();
+      ctx.moveTo(0, hexa3);
+      ctx.lineTo(-hexaSide/2, hexa3_2-0.5);
+      ctx.lineTo(hexaSide / 2, hexa3_2-0.5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      // top left
+      ctx.fillStyle = odd ? brighterColor: mainColor;
+      ctx.strokeStyle = odd ? brighterColor: mainColor;
+      ctx.beginPath();
+      ctx.moveTo(-hexaSide/2, hexa3_2-0.5);
+      ctx.lineTo(0, 0);
+      ctx.lineTo(hexaSide / 2, hexa3_2-0.5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      
+      // ctx.fillStyle = "rgb(0,0,0)";
+      // ctx.font = "10pt Tahoma";
+      // ctx.fillText(parseInt(this.delay), 0, hexaSide);
+
+      ctx.restore();
+    }
+  }
+
+  var offscreen = document.createElement ("canvas");
+  var offscreen_ctx = offscreen.getContext ("2d");
+  var noiseTileSize = 100;
+  offscreen.width = noiseTileSize;
+  offscreen.height = noiseTileSize;
+  var noiseImage = createNoiseImage(offscreen_ctx, noiseTileSize, noiseTileSize);
+  offscreen_ctx.putImageData(noiseImage, 0, 0);
+
+  var redrawTimeline = new Timeline();
+  redrawTimeline.addEventListener("onpulse", draw);
+  redrawTimeline.playInfiniteLoop(RepeatBehavior.LOOP);
+  
+  var hexas = [];
+  var rowCount = canvas.height / hexa3 + 1;
+  var colCount = canvas.width / (3 * hexaSide / 2) + 1;
+  var scenario = new TimelineScenario();
+  for (var row=0; row <= rowCount; row++) {
+    for (var column=0; column <= colCount; column++) {
+      var dist = (colCount - column) + row + 3;
+      var hue = 0.7 * (1.0 - dist / (rowCount + colCount));
+      var sat = 0.9;
+      var brightness = 0.8;
+      var hexa = new Hexagon(row, column, hue, sat, brightness);
+      var timeline = new Timeline(hexa);
+      timeline.duration = 3000;
+      var dx = hexa.getMidX() - canvas.width / 2;
+      var dy = hexa.getMidY() - canvas.height / 2;
+      var diag = canvas.width / 2 + canvas.height / 2;
+      timeline.initialDelay = timeline.duration * Math.sqrt((dx*dx + dy * dy) / (diag * diag)) / 2;
+      timeline.addPropertiesToInterpolate([
+        { property: "extraBrightness", 
+            goingThrough: { 0: 1.0, 0.6: 1.0, 0.7: 0.0, 0.8: 1.0, 1.0: 1.0}, 
+            interpolator: new FloatPropertyInterpolator()}
+      ]);
+      scenario.addScenarioActor(timeline);
+      hexas[hexas.length] = hexa;
+    }
+    scenario.playLoop();
+  }
+  
+  function draw() {
+    var start = new Date().getTime();
+    ctx.fillStyle = "rgb(5, 38, 34)";
+    ctx.fillRect(0,0,canvas.width, canvas.height);
+
+    for (var i=0; i<hexas.length; i++) {
+      hexas[i].draw(ctx);
+    }
+
+    ctx.globalAlpha = 0.2;
+    for (var xOffset = 0; xOffset < canvas.width; xOffset += noiseTileSize) {
+      for (var yOffset = 0; yOffset < canvas.height; yOffset += noiseTileSize) {
+        ctx.drawImage(offscreen, xOffset, yOffset);
+      }
+    }
+    ctx.globalAlpha = 1.0;
+    var end = new Date().getTime();
+    document.getElementById("renderTime").innerHTML = end - start;
+  }
+  </script>
+
+</body>
+
+</html>
