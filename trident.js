@@ -75,7 +75,15 @@ function IntPropertyInterpolator() {
     return parseInt(parseFloat(from + (to - from) * timelinePosition));
   }
 }
+function PixelPropertyIntegerInterpolater()
+{
+  this.interpolate = function(from, to, timelinePosition)
+  {
+    return parseInt(parseFloat(from + (to - from) * timelinePosition))+"px";
 
+  }
+
+}
 function FloatPropertyInterpolator() {
   this.interpolate = function(from, to, timelinePosition) {
     var fFrom = parseFloat(from);
