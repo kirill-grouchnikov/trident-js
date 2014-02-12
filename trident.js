@@ -75,7 +75,16 @@ function IntPropertyInterpolator() {
     return parseInt(parseFloat(from + (to - from) * timelinePosition));
   }
 }
+function PixelPropertyIntegerInterpolater()
+{
+  this.interpolate = function(from, to, timelinePosition)
+  {
 
+    return parseInt(parseFloat(from + (to - from) * timelinePosition))+"px";
+
+  }
+
+}
 function FloatPropertyInterpolator() {
   this.interpolate = function(from, to, timelinePosition) {
     var fFrom = parseFloat(from);
@@ -649,6 +658,8 @@ function PropertyInfo(mainObject, field, from, to, interpolator) {
 
   this.updateValue = function(timelinePosition) {
     this.mainObject[field] = interpolator.interpolate(from, to, timelinePosition);
+    console.log(this.mainObject[field]);
+    console.log(field);
   }
 }
 
@@ -727,10 +738,14 @@ function Timeline(mainObject) {
   var getProperties = function() {
     return properties;
   }
-
+/*
+*Takes a property name
+*Uses lower case and upper case as seperator instead of -
+*/
   var addProperty = function(property) {
     var currProperties = getProperties();
     currProperties[currProperties.length] = property;
+    console.log(currProperties);
   }
 
   this.addPropertyToInterpolate = function(field, from, to, interpolator) {
